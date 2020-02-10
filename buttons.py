@@ -1,0 +1,8 @@
+admin_func_btn = 'Функции администратора'
+show_role_btn = 'Указать роль для пользователя'
+alert_form_btn = 'Оповещение о заполнении анкет'
+alert_voting_btn = 'Оповещение об оценке вклада'
+ask_teamleads_btn = 'Запросить список тимлидов'
+ask_teams_crew_btn = 'Запросить составы команд'
+choose_best_btn = 'Выбрать лучших'
+back_btn = 'Назад'
