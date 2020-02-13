@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
-from db_config import db
+from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
