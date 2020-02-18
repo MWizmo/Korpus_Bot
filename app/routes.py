@@ -1,5 +1,5 @@
 from app import bot
-import telebot
+import bot_config
 from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
@@ -41,14 +41,6 @@ def process_text(message):
             bot.send_message(chat_id, 'Выберите действие', reply_markup=getAdminKeyboard())
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
-        # elif text == choose_best_btn:
-        #     users = getUsersForChoosingBest(_id)
-        #     if users:
-        #         pass
-        #     else:
-        #         bot.send_message(message.chat.id, 'В данный момент не из кого выбирать')
-        # elif mess == show_role_btn and isAdmin(_id):
-        #     set_rang(message, bot)
         elif text == alert_voting_btn and isAdmin(user_id):
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(text='Ось отношений', callback_data='alert_voting_1'))
@@ -155,7 +147,8 @@ def process_image(message):
     if getState(message['from']['id']) == 2:
         photo = message['photo'][len(message['photo']) - 1]['file_id']
         _id = message['from']['id']
-        setPhoto(_id, photo)
+        photo_url = 'https://api.telegram.org/file/bot' + bot_config.token + '/' + bot.get_file(photo).file_path
+        setPhoto(_id, photo_url)
         # bot.send_photo(message['chat']['id'], photo)
         bot.send_message(message['chat']['id'], 'Добро пожаловать!', reply_markup=getKeyboard(message['from']['id']))
         setState(message['from']['id'], 1)
@@ -244,50 +237,4 @@ def start(message):
                          """Кажется, ты еще не зарегистрирован в системе. Перейди по ссылке для регистрации,
                          после чего возвращайся и вновь введи /start""",
                          reply_markup=markup)
-
-
-
-
-    # if data.startswith('set_rang'):
-    #     bot.delete_message(chat_id=chat_id, message_id=message_id)
-    #     bot.send_message(chat_id, "Главное меню", reply_markup=getKeyboard(user_id))
-    # else:
-    #     _id = data.split('%')[1]
-    #     keyboard = telebot.types.InlineKeyboardMarkup()
-    #     keyboard.row(telebot.types.InlineKeyboardButton(text='Админ', callback_data='setting_rang#1#' + str(_id)),
-    #                  telebot.types.InlineKeyboardButton(text='Атаман', callback_data='setting_rang#2#' + str(_id)))
-    #     keyboard.row(telebot.types.InlineKeyboardButton(text='Курсант', callback_data='setting_rang#3#' + str(_id)),
-    #                  telebot.types.InlineKeyboardButton(text='Курсант-тимлид',
-    #                                                     callback_data='setting_rang#4#' + str(_id)))
-    #     bot.delete_message(chat_id=chat_id, message_id=message_id)
-    #     bot.send_message(chat_id,
-    #                      'Выберите роль для пользователя ' + getName(_id) + ' (текущие роли: ' + getStatusTitleByID(
-    #                          _id) + ')', reply_markup=keyboard)
-#
-#
-# @bot.callback_query_handler(func=lambda call: True and call.data.startswith('setting_rang'))
-# def setting_rang2(call):
-#     items = call.data.split('#')
-#     rang = items[1]
-#     _id = items[2]
-#     setStatusByID(_id, rang)
-#     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-#     bot.send_message(call.message.chat.id, "Успешно",
-#                      reply_markup=getKeyboard(call.from_user.id))
-#     # bot.send_message(GetChatId(nick, cursor), 'Вам добавлена роль "'+GetTitleOfRang(rang, cursor)+'"')
-#
-#
-# @bot.callback_query_handler(func=lambda call: True and call.data.startswith('ask_teamleads'))
-# def set_teamleads(call):
-#     user_id = int(call.data.split('%')[1])
-#     if user_id == -1:
-#         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-#         bot.send_message(call.message.chat.id, "Успешно",
-#                          reply_markup=getKeyboard(call.from_user.id))
-#     else:
-#         setStatus(user_id, 4)
-#
-
-
-
 
