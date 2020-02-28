@@ -1,4 +1,4 @@
-from app import bot, app
+from app import bot
 import bot_config
 from db_commands import *
 from sqlalchemy import func
@@ -149,7 +149,7 @@ def process_image(message):
         photo = message['photo'][len(message['photo']) - 1]['file_id']
         _id = message['from']['id']
         photo_url = 'https://api.telegram.org/file/bot' + bot_config.token + '/' + bot.get_file(photo).file_path
-        f = open(app.root_path + '/user_photos/user' + str(get_id(message['from']['id'])) + '.jpg', "wb")
+        f = open(r'/home/snapper/KorpusToken/app/static/user_photos/user' + str(get_id(message['from']['id'])) + '.jpg', "wb")
         ufr = requests.get(photo_url)
         f.write(ufr.content)
         f.close()
