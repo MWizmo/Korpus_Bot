@@ -153,7 +153,7 @@ def process_image(message):
         ufr = requests.get(photo_url)
         f.write(ufr.content)
         f.close()
-        # setPhoto(_id, photo_url)
+        setPhoto(_id, photo_url)
         # bot.send_photo(message['chat']['id'], photo)
         bot.send_message(message['chat']['id'], 'Добро пожаловать!', reply_markup=getKeyboard(message['from']['id']))
         setState(message['from']['id'], 1)
