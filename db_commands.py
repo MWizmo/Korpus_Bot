@@ -40,7 +40,6 @@ def getAdminKeyboard():
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     keyboard.add(alert_form_btn)
     keyboard.add(alert_voting_btn)
-    keyboard.add('Test')
     keyboard.add(back_btn)
     return keyboard
 
@@ -140,3 +139,10 @@ def getUsersForChoosingBest(tg_id):
             res.append(user)
     return res
 
+
+def get_id(tg_id):
+    user = User.query.filter_by(tg_id=tg_id).first()
+    if user:
+        return user.id
+    else:
+        return -1
