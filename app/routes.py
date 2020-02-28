@@ -39,6 +39,8 @@ def process_text(message):
     if state == 1:
         if text == admin_func_btn and isAdmin(user_id):
             bot.send_message(chat_id, 'Выберите действие', reply_markup=getAdminKeyboard())
+        elif text == 'test':
+            setState(user_id, 100)
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
         elif text == alert_voting_btn and isAdmin(user_id):
@@ -80,8 +82,17 @@ def process_text(message):
             bot.send_message(chat_id, 'Оповещения разосланы')
         elif text == ask_teams_crew_btn:
             pass
+        # else:
+        #     bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
+    elif state == 100:
+        if text == 'ok':
+            bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
+            setState(user_id, 1)
         else:
-            bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
+            try:
+                bot.send_photo(chat_id, message['text'])
+            except:
+                bot.send_photo(chat_id, 'no')
     elif state == 10:
         if text == 'Отмена':
             bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
