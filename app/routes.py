@@ -55,7 +55,9 @@ def process_text(message):
             month = datetime.datetime.now().month
             for user in cadets:
                 if len(Questionnaire.query.filter(Questionnaire.user_id == user.id,
-                                                  func.month(Questionnaire.date) == month).all()) < 2:
+                                                  func.month(Questionnaire.date) == month).all()) + len(
+                    Questionnaire.query.filter(Questionnaire.user_id == user.id,
+                                               func.month(Questionnaire.date) == month - 1).all()) < 2:
                     if user.tg_id:
                         user_names.append('{} {}'.format(user.name, user.surname))
                     else:
