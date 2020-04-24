@@ -42,6 +42,16 @@ def process_text(message):
             bot.send_message(chat_id, 'Выберите действие', reply_markup=getAdminKeyboard())
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+        elif text == voting_btn:
+            teams = Teams.query.filter_by(type=1).all()
+            markup = InlineKeyboardMarkup()
+            for t in teams:
+                wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == t.id,
+                                               WeeklyVoting.finished == 1).first()
+                if not wm:
+                    markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
+            bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
         elif text == alert_voting_btn and isAdmin(user_id):
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(text='Ось отношений', callback_data='alert_voting_1'))
@@ -83,8 +93,8 @@ def process_text(message):
             bot.send_message(chat_id, 'Оповещения разосланы')
         elif text == ask_teams_crew_btn:
             pass
-        # else:
-        #     bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
+        else:
+            bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
     elif state == 10:
         if text == 'Отмена':
             bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
@@ -161,6 +171,31 @@ def process_image(message):
         setState(message['from']['id'], 1)
 
 
+def get_mark_message(user_id, team_id):
+    mark1 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
+                                      WeeklyVoting.criterion_id == 4).first()
+    if mark1:
+        mark1 = mark1.mark
+    else:
+        mark1 = 0
+    mark2 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
+                                      WeeklyVoting.criterion_id == 5).first()
+    if mark2:
+        mark2 = mark2.mark
+    else:
+        mark2 = 0
+    mark3 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
+                                      WeeklyVoting.criterion_id == 6).first()
+    if mark3:
+        mark3 = mark3.mark
+    else:
+        mark3 = 0
+    team = Teams.query.filter_by(id=team_id).first().name
+    message = '<b>Команда "{}" </b>\nДвижение: {}\nЗавершенность: {}\nПодтверждение средой: {}\n\n'.format(team, mark1,
+                                                                                                           mark2, mark3)
+    return message
+
+
 def process_callback(callback):
     data = callback['data']
     user_id = callback['from']['id']
@@ -224,6 +259,102 @@ def process_callback(callback):
                                  'Еще не закончили оценку по оси власти (* - не авторизован в боте):\n' +
                                  '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 13)
+    elif data.startswith('choose_team_'):
+        tid = int(data.split('_')[-1])
+        bot.delete_message(chat_id=chat_id, message_id=message_id)
+        if tid == 0:
+            bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+        else:
+            message = get_mark_message(user_id, tid)
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
+            markup.add(InlineKeyboardButton(text='Завершенность', callback_data='weekly_vote_{}_{}'.format(tid, 5)))
+            markup.add(InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
+            markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки',
+                                            callback_data='weekly_vote_{}_{}'.format(tid, 0)))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
+            bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
+    elif data.startswith('weekly_vote_'):
+        tid = int(data.split('_')[-2])
+        cid = int(data.split('_')[-1])
+        if cid == 0:
+            if tid == 0:
+                teams = Teams.query.filter_by(type=1).all()
+                markup = InlineKeyboardMarkup()
+                for t in teams:
+                    wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
+                                                   WeeklyVoting.team_id == t.id,
+                                                   WeeklyVoting.finished == 1).first()
+                    if not wm:
+                        markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
+                markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
+                bot.delete_message(chat_id=chat_id, message_id=message_id)
+                bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
+            else:
+                mark1 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
+                                                  WeeklyVoting.team_id == tid,
+                                                  WeeklyVoting.criterion_id == 4, WeeklyVoting.finished == 0).first()
+                if mark1:
+                    mark1.finished = 1
+                else:
+                    wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=4, mark=0,
+                                      date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                         datetime.datetime.now().day), finished=1)
+                    db.session.add(wm)
+                mark2 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
+                                                  WeeklyVoting.team_id == tid,
+                                                  WeeklyVoting.criterion_id == 5, WeeklyVoting.finished == 0).first()
+                if mark2:
+                   mark2.finished = 1
+                else:
+                    wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=5, mark=0,
+                                      date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                         datetime.datetime.now().day), finished=1)
+                    db.session.add(wm)
+                mark3 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
+                                                  WeeklyVoting.team_id == tid,
+                                                  WeeklyVoting.criterion_id == 6, WeeklyVoting.finished == 0).first()
+                if mark3:
+                    mark3.finished = 1
+                else:
+                    wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=6, mark=0,
+                                      date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                         datetime.datetime.now().day), finished=1)
+                    db.session.add(wm)
+                db.session.commit()
+                teams = Teams.query.filter_by(type=1).all()
+                markup = InlineKeyboardMarkup()
+                for t in teams:
+                    wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
+                                                   WeeklyVoting.team_id == t.id,
+                                                   WeeklyVoting.finished == 1).first()
+                    if not wm:
+                        markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
+                markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
+                bot.delete_message(chat_id=chat_id, message_id=message_id)
+                bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
+        else:
+            wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == tid,
+                                      WeeklyVoting.criterion_id == cid).first()
+            if wm:
+                wm.mark = abs(wm.mark - 1)
+                db.session.commit()
+            else:
+                wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=cid, mark=1,
+                                  date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                 datetime.datetime.now().day), finished=0)
+                db.session.add(wm)
+                db.session.commit()
+            message = get_mark_message(user_id, tid)
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
+            markup.add(InlineKeyboardButton(text='Завершенность', callback_data='weekly_vote_{}_{}'.format(tid, 5)))
+            markup.add(
+                    InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
+            markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки', callback_data='weekly_vote_{}_{}'.format(tid, 0)))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
+            bot.edit_message_text(message + 'Выберите критерий для оценки', chat_id, message_id, parse_mode='HTML', reply_markup=markup)
+            # bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
 
 
 def start(message):

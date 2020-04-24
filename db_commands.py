@@ -31,8 +31,11 @@ def getKeyboard(id):
     status = getStatus(id)
     if status == -1:
         markup.add('Кнопка 1', 'Кнопка 2')
-    elif 1 in status:
-        markup.add(admin_func_btn)
+    else:
+        if 1 in status:
+            markup.add(admin_func_btn)
+        if 2 in status or 4 in status or 5 in status:
+            markup.add(voting_btn)
     return markup
 
 
