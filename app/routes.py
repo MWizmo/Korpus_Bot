@@ -43,11 +43,13 @@ def process_text(message):
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
         elif text == voting_btn:
+            today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                  datetime.datetime.now().day)
             teams = Teams.query.filter_by(type=1).all()
             markup = InlineKeyboardMarkup()
             for t in teams:
                 wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == t.id,
-                                               WeeklyVoting.finished == 1).first()
+                                               WeeklyVoting.finished == 1, WeeklyVoting.date == today).first()
                 if not wm:
                     markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
             markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
@@ -292,9 +294,6 @@ def process_callback(callback):
                                                    WeeklyVoting.date == today).first()
                     if not wm:
                         markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
-                    else:
-                        print(today)
-                        print(wm.date)
                 markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
                 bot.delete_message(chat_id=chat_id, message_id=message_id)
                 bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
