@@ -172,20 +172,22 @@ def process_image(message):
 
 
 def get_mark_message(user_id, team_id):
+    today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                          datetime.datetime.now().day)
     mark1 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
-                                      WeeklyVoting.criterion_id == 4).first()
+                                      WeeklyVoting.criterion_id == 4, WeeklyVoting.date == today).first()
     if mark1:
         mark1 = mark1.mark
     else:
         mark1 = 0
     mark2 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
-                                      WeeklyVoting.criterion_id == 5).first()
+                                      WeeklyVoting.criterion_id == 5, WeeklyVoting.date == today).first()
     if mark2:
         mark2 = mark2.mark
     else:
         mark2 = 0
     mark3 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == team_id,
-                                      WeeklyVoting.criterion_id == 6).first()
+                                      WeeklyVoting.criterion_id == 6, WeeklyVoting.date == today).first()
     if mark3:
         mark3 = mark3.mark
     else:
@@ -275,6 +277,8 @@ def process_callback(callback):
             markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
             bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
     elif data.startswith('weekly_vote_'):
+        today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                                         datetime.datetime.now().day)
         tid = int(data.split('_')[-2])
         cid = int(data.split('_')[-1])
         if cid == 0:
@@ -284,7 +288,8 @@ def process_callback(callback):
                 for t in teams:
                     wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
                                                    WeeklyVoting.team_id == t.id,
-                                                   WeeklyVoting.finished == 1).first()
+                                                   WeeklyVoting.finished == 1,
+                                                   WeeklyVoting.date == today).first()
                     if not wm:
                         markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
                 markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
@@ -293,7 +298,8 @@ def process_callback(callback):
             else:
                 mark1 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
                                                   WeeklyVoting.team_id == tid,
-                                                  WeeklyVoting.criterion_id == 4, WeeklyVoting.finished == 0).first()
+                                                  WeeklyVoting.criterion_id == 4,
+                                                  WeeklyVoting.finished == 0, WeeklyVoting.date == today).first()
                 if mark1:
                     mark1.finished = 1
                 else:
@@ -313,7 +319,8 @@ def process_callback(callback):
                     db.session.add(wm)
                 mark3 = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
                                                   WeeklyVoting.team_id == tid,
-                                                  WeeklyVoting.criterion_id == 6, WeeklyVoting.finished == 0).first()
+                                                  WeeklyVoting.criterion_id == 6, WeeklyVoting.finished == 0,
+                                                  WeeklyVoting.date == today).first()
                 if mark3:
                     mark3.finished = 1
                 else:
@@ -327,7 +334,8 @@ def process_callback(callback):
                 for t in teams:
                     wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
                                                    WeeklyVoting.team_id == t.id,
-                                                   WeeklyVoting.finished == 1).first()
+                                                   WeeklyVoting.finished == 1,
+                                                   WeeklyVoting.date == today).first()
                     if not wm:
                         markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
                 markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
@@ -335,7 +343,7 @@ def process_callback(callback):
                 bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
         else:
             wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == tid,
-                                      WeeklyVoting.criterion_id == cid).first()
+                                      WeeklyVoting.criterion_id == cid, WeeklyVoting.date == today).first()
             if wm:
                 wm.mark = abs(wm.mark - 1)
                 db.session.commit()
