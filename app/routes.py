@@ -42,6 +42,13 @@ def process_text(message):
             bot.send_message(chat_id, 'Выберите действие', reply_markup=getAdminKeyboard())
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+        elif text == weekly_vote_btn:
+            users = User.query.all()
+            for user in users:
+                status = getStatus(user_id)
+                if 2 in status or 4 in status or 5 in status:
+                    bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+            bot.send_message(chat_id, 'Оповещения отправлены')
         elif text == voting_btn:
             today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
                                   datetime.datetime.now().day)
