@@ -45,9 +45,12 @@ def process_text(message):
         elif text == weekly_vote_btn:
             users = User.query.all()
             for user in users:
-                status = getStatus(user_id)
-                if 2 in status or 4 in status or 5 in status:
-                    bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+                try:
+                    status = getStatus(user.tg_id)
+                    if 2 in status or 4 in status or 5 in status:
+                        bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+                except:
+                    pass
             bot.send_message(chat_id, 'Оповещения отправлены')
         elif text == voting_btn:
             today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
