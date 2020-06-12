@@ -43,6 +43,7 @@ def getAdminKeyboard():
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     keyboard.add(alert_form_btn)
     keyboard.add(alert_voting_btn)
+    keyboard.add(weekly_vote_btn)
     keyboard.add(back_btn)
     return keyboard
 
