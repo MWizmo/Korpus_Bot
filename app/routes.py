@@ -210,6 +210,20 @@ def get_mark_message(user_id, team_id):
     return message
 
 
+def get_cadets_for_choosing(team_id, user_id):
+    today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                          datetime.datetime.now().day)
+    team = Membership.get_crew_of_team(team_id)
+    res = []
+    for member in team:
+        if WeeklyVotingMembers.query.filter(WeeklyVotingMembers.team_id == team_id,
+                                            WeeklyVotingMembers.cadet_id == member[0],
+                                            WeeklyVotingMembers.date == today,
+                                            WeeklyVotingMembers.user_id == user_id).first() in None:
+            res.append((member[0], member[1] + member[2]))
+    return res
+
+
 def process_callback(callback):
     data = callback['data']
     user_id = callback['from']['id']
@@ -279,6 +293,30 @@ def process_callback(callback):
         if tid == 0:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
         else:
+            team = get_cadets_for_choosing(tid, user_id)
+            markup = InlineKeyboardMarkup()
+            for cadet in team:
+                markup.add(InlineKeyboardButton(text=cadet[1], callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+            markup.add(InlineKeyboardButton(text='<Закончить выбор и перейти к оценке>', callback_data='choose_members_for_wv_1_0'))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку', reply_markup=markup)
+    elif data.startswith('choose_members_for_wv_'):
+        tid = int(data.split('_')[-2])
+        cadet_id = int(data.split('_')[-1])
+        bot.delete_message(chat_id=chat_id, message_id=message_id)
+        if tid == 0:
+            today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                  datetime.datetime.now().day)
+            teams = Teams.query.filter_by(type=1).all()
+            markup = InlineKeyboardMarkup()
+            for t in teams:
+                wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == t.id,
+                                               WeeklyVoting.finished == 1, WeeklyVoting.date == today).first()
+                if not wm:
+                    markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
+            bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
+        elif cadet_id == 0:
             message = get_mark_message(user_id, tid)
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
@@ -288,6 +326,21 @@ def process_callback(callback):
                                             callback_data='weekly_vote_{}_{}'.format(tid, 0)))
             markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
             bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
+        else:
+            today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
+                                  datetime.datetime.now().day)
+            memeber = WeeklyVotingMembers(cadet_id=cadet_id, user_id=user_id, date=today, team_id=tid)
+            db.session.add(memeber)
+            db.session.commit()
+            team = get_cadets_for_choosing(tid, user_id)
+            markup = InlineKeyboardMarkup()
+            for cadet in team:
+                markup.add(InlineKeyboardButton(text=cadet[1],
+                                                callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+            markup.add(InlineKeyboardButton(text='<Закончить выбор и перейти к оценке>', callback_data='choose_members_for_wv_1_0'))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+                             reply_markup=markup)
     elif data.startswith('weekly_vote_'):
         today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
                                                          datetime.datetime.now().day)
