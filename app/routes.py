@@ -220,7 +220,7 @@ def get_cadets_for_choosing(team_id, user_id):
                                             WeeklyVotingMembers.cadet_id == member[0],
                                             WeeklyVotingMembers.date == today,
                                             WeeklyVotingMembers.user_id == user_id).first() is None:
-            res.append((member[0], member[1] + member[2]))
+            res.append((member[0], member[1] + " " + member[2]))
     return res
 
 
