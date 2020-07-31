@@ -82,7 +82,7 @@ def process_text(message):
             markup.add(InlineKeyboardButton(text='<Закончить выбор>',
                                             callback_data='choose_members_for_wv_0_0'))
             #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
-            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+            bot.send_message(chat_id, 'Выберите участников команды, которые не получат баллы за текущую оценку',
                              reply_markup=markup)
         elif text == alert_form_btn and isAdmin(user_id):
             cadets = [user for user in User.query.all() if User.check_can_be_marked(user.id)]
@@ -362,7 +362,7 @@ def process_callback(callback):
             markup.add(InlineKeyboardButton(text='<Закончить выбор>',
                                             callback_data='choose_members_for_wv_0_0'))
             #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
-            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+            bot.send_message(chat_id, 'Выберите участников команды, которые не получат баллы за текущую оценку',
                              reply_markup=markup)
     elif data.startswith('weekly_vote_'):
         today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
