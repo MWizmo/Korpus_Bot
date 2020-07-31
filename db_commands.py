@@ -36,6 +36,8 @@ def getKeyboard(id):
             markup.add(admin_func_btn)
         if 2 in status or 4 in status or 5 in status:
             markup.add(voting_btn)
+        if 4 in status:
+            markup.add(weekly_vote_members)
     return markup
 
 

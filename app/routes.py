@@ -5,7 +5,6 @@ from sqlalchemy import func
 from flask import request, blueprints
 import requests
 
-
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
 
@@ -71,6 +70,20 @@ def process_text(message):
             markup.add(InlineKeyboardButton(text='Ось власти', callback_data='alert_voting_3'))
             markup.add(InlineKeyboardButton(text='Отмена', callback_data='alert_voting_4'))
             bot.send_message(chat_id, 'Выберите ось', reply_markup=markup)
+        elif text == weekly_vote_members:
+            cadet_id = get_id(user_id)
+            teams = Membership.query.filter_by(user_id=cadet_id).all()
+            tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type == 1][0]
+            team = get_cadets_for_choosing(tid, user_id)
+            markup = InlineKeyboardMarkup()
+            for cadet in team:
+                markup.add(InlineKeyboardButton(text=cadet[1],
+                                                callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+            markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+                                            callback_data='choose_members_for_wv_0_0'))
+            #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+                             reply_markup=markup)
         elif text == alert_form_btn and isAdmin(user_id):
             cadets = [user for user in User.query.all() if User.check_can_be_marked(user.id)]
             user_names = list()
@@ -132,7 +145,8 @@ def process_text(message):
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
             for user in users:
                 if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month, Voting.axis_id == 1).all()) < marked_teams_num:
+                                           func.month(Voting.date) == month,
+                                           Voting.axis_id == 1).all()) < marked_teams_num:
                     if user.tg_id:
                         bot.send_message(user.chat_id, text)
             bot.send_message(chat_id, 'Успешно', reply_markup=getKeyboard(user_id))
@@ -147,7 +161,8 @@ def process_text(message):
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
             for user in users:
                 if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month, Voting.axis_id == 2).all()) < marked_teams_num:
+                                           func.month(Voting.date) == month,
+                                           Voting.axis_id == 2).all()) < marked_teams_num:
                     if user.tg_id:
                         bot.send_message(user.chat_id, text)
             bot.send_message(chat_id, 'Успешно', reply_markup=getKeyboard(user_id))
@@ -173,7 +188,8 @@ def process_image(message):
         photo = message['photo'][len(message['photo']) - 1]['file_id']
         _id = message['from']['id']
         photo_url = 'https://api.telegram.org/file/bot' + bot_config.token + '/' + bot.get_file(photo).file_path
-        f = open(r'/home/snapper/KorpusToken/app/static/user_photos/user' + str(get_id(message['from']['id'])) + '.jpg', "wb")
+        f = open(r'/home/snapper/KorpusToken/app/static/user_photos/user' + str(get_id(message['from']['id'])) + '.jpg',
+                 "wb")
         ufr = requests.get(photo_url)
         f.write(ufr.content)
         f.close()
@@ -241,7 +257,8 @@ def process_callback(callback):
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
             for user in users:
                 if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month, Voting.axis_id == 1).all()) < marked_teams_num:
+                                           func.month(Voting.date) == month,
+                                           Voting.axis_id == 1).all()) < marked_teams_num:
                     if user.tg_id:
                         user_names.append('{} {}'.format(user.name, user.surname))
                     else:
@@ -249,8 +266,8 @@ def process_callback(callback):
             markup = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             markup.add('Отмена')
             bot.send_message(chat_id,
-                                 'Еще не закончили оценку по оси отношений (* - не авторизован в боте):\n' +
-                                 '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
+                             'Еще не закончили оценку по оси отношений (* - не авторизован в боте):\n' +
+                             '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 11)
         elif axis == 2:
             users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id))]
@@ -259,7 +276,8 @@ def process_callback(callback):
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
             for user in users:
                 if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month, Voting.axis_id == 2).all()) < marked_teams_num:
+                                           func.month(Voting.date) == month,
+                                           Voting.axis_id == 2).all()) < marked_teams_num:
                     if user.tg_id:
                         user_names.append('{} {}'.format(user.name, user.surname))
                     else:
@@ -267,8 +285,8 @@ def process_callback(callback):
             markup = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             markup.add('Отмена')
             bot.send_message(chat_id,
-                                 'Еще не закончили оценку по оси дела (* - не авторизован в боте):\n' +
-                                 '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
+                             'Еще не закончили оценку по оси дела (* - не авторизован в боте):\n' +
+                             '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 12)
         elif axis == 3:
             users = [user for user in User.query.all() if User.check_chieftain(user.id)]
@@ -284,8 +302,8 @@ def process_callback(callback):
             markup = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             markup.add('Отмена')
             bot.send_message(chat_id,
-                                 'Еще не закончили оценку по оси власти (* - не авторизован в боте):\n' +
-                                 '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
+                             'Еще не закончили оценку по оси власти (* - не авторизован в боте):\n' +
+                             '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 13)
     elif data.startswith('choose_team_'):
         tid = int(data.split('_')[-1])
@@ -293,35 +311,39 @@ def process_callback(callback):
         if tid == 0:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
         else:
-            team = get_cadets_for_choosing(tid, user_id)
+            # team = get_cadets_for_choosing(tid, user_id)
+            # markup = InlineKeyboardMarkup()
+            # for cadet in team:
+            #     markup.add(InlineKeyboardButton(text=cadet[1],
+            #                                     callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+            # markup.add(InlineKeyboardButton(text='<Закончить выбор и перейти к оценке>',
+            #                                 callback_data='choose_members_for_wv_1_0'))
+            # markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            # bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+            #                  reply_markup=markup)
+            message = get_mark_message(user_id, tid)
             markup = InlineKeyboardMarkup()
-            for cadet in team:
-                markup.add(InlineKeyboardButton(text=cadet[1], callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
-            markup.add(InlineKeyboardButton(text='<Закончить выбор и перейти к оценке>', callback_data='choose_members_for_wv_1_0'))
-            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
-            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку', reply_markup=markup)
+            markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
+            markup.add(InlineKeyboardButton(text='Завершенность', callback_data='weekly_vote_{}_{}'.format(tid, 5)))
+            markup.add(
+                InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
+            markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки',
+                                            callback_data='weekly_vote_{}_{}'.format(tid, 0)))
+            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
+            bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
     elif data.startswith('choose_members_for_wv_'):
         tid = int(data.split('_')[-2])
         cadet_id = int(data.split('_')[-1])
         bot.delete_message(chat_id=chat_id, message_id=message_id)
         if tid == 0:
-            today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
-                                  datetime.datetime.now().day)
-            teams = Teams.query.filter_by(type=1).all()
-            markup = InlineKeyboardMarkup()
-            for t in teams:
-                wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == t.id,
-                                               WeeklyVoting.finished == 1, WeeklyVoting.date == today).first()
-                if not wm:
-                    markup.add(InlineKeyboardButton(text=t.name, callback_data='choose_team_{}'.format(t.id)))
-            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_team_0'))
-            bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
+            bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
         elif cadet_id == 0:
             message = get_mark_message(user_id, tid)
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
             markup.add(InlineKeyboardButton(text='Завершенность', callback_data='weekly_vote_{}_{}'.format(tid, 5)))
-            markup.add(InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
+            markup.add(
+                InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
             markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки',
                                             callback_data='weekly_vote_{}_{}'.format(tid, 0)))
             markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
@@ -337,13 +359,14 @@ def process_callback(callback):
             for cadet in team:
                 markup.add(InlineKeyboardButton(text=cadet[1],
                                                 callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
-            markup.add(InlineKeyboardButton(text='<Закончить выбор и перейти к оценке>', callback_data='choose_members_for_wv_1_0'))
-            markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+                                            callback_data='choose_members_for_wv_0_0'))
+            #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
             bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
                              reply_markup=markup)
     elif data.startswith('weekly_vote_'):
         today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
-                                                         datetime.datetime.now().day)
+                              datetime.datetime.now().day)
         tid = int(data.split('_')[-2])
         cid = int(data.split('_')[-1])
         if cid == 0:
@@ -376,7 +399,7 @@ def process_callback(callback):
                                                   WeeklyVoting.team_id == tid,
                                                   WeeklyVoting.criterion_id == 5, WeeklyVoting.finished == 0).first()
                 if mark2:
-                   mark2.finished = 1
+                    mark2.finished = 1
                 else:
                     wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=5, mark=0,
                                       date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
@@ -408,14 +431,14 @@ def process_callback(callback):
                 bot.send_message(chat_id, 'Выберите команду для оценки', reply_markup=markup)
         else:
             wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == tid,
-                                      WeeklyVoting.criterion_id == cid, WeeklyVoting.date == today).first()
+                                           WeeklyVoting.criterion_id == cid, WeeklyVoting.date == today).first()
             if wm:
                 wm.mark = abs(wm.mark - 1)
                 db.session.commit()
             else:
                 wm = WeeklyVoting(user_id=get_id(user_id), team_id=tid, criterion_id=cid, mark=1,
                                   date=datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
-                                                 datetime.datetime.now().day), finished=0)
+                                                     datetime.datetime.now().day), finished=0)
                 db.session.add(wm)
                 db.session.commit()
             message = get_mark_message(user_id, tid)
@@ -423,16 +446,18 @@ def process_callback(callback):
             markup.add(InlineKeyboardButton(text='Движение', callback_data='weekly_vote_{}_{}'.format(tid, 4)))
             markup.add(InlineKeyboardButton(text='Завершенность', callback_data='weekly_vote_{}_{}'.format(tid, 5)))
             markup.add(
-                    InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
-            markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки', callback_data='weekly_vote_{}_{}'.format(tid, 0)))
+                InlineKeyboardButton(text='Подтверждение средой', callback_data='weekly_vote_{}_{}'.format(tid, 6)))
+            markup.add(InlineKeyboardButton(text='Зафиксировать результаты оценки',
+                                            callback_data='weekly_vote_{}_{}'.format(tid, 0)))
             markup.add(InlineKeyboardButton(text='<Назад>', callback_data='weekly_vote_{}_{}'.format(0, 0)))
-            bot.edit_message_text(message + 'Выберите критерий для оценки', chat_id, message_id, parse_mode='HTML', reply_markup=markup)
+            bot.edit_message_text(message + 'Выберите критерий для оценки', chat_id, message_id, parse_mode='HTML',
+                                  reply_markup=markup)
             # bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
 
 
 def start(message):
     if isUserInDb(message['from']['username']):
-        if not(checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
+        if not (checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
             bot.send_message(message['chat']['id'],
                              "Для упрощения нашего взаимодействия через систему загрузите, пожалуйста, свою фотографию.")
             setState(message['from']['id'], 2)
@@ -448,4 +473,3 @@ def start(message):
                          """Кажется, ты еще не зарегистрирован в системе. Перейди по ссылке для регистрации,
                          после чего возвращайся и вновь введи /start""",
                          reply_markup=markup)
-
