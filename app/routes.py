@@ -371,7 +371,7 @@ def process_callback(callback):
         cid = int(data.split('_')[-1])
         if cid == 0:
             if tid == 0:
-                teams = Teams.query.filter_by(type=1).all()
+                teams = Teams.query.filter_by(type=1).all() + Teams.query.filter_by(type=4).all()
                 markup = InlineKeyboardMarkup()
                 for t in teams:
                     wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
@@ -417,7 +417,7 @@ def process_callback(callback):
                                                          datetime.datetime.now().day), finished=1)
                     db.session.add(wm)
                 db.session.commit()
-                teams = Teams.query.filter_by(type=1).all()
+                teams = Teams.query.filter_by(type=1).all() + Teams.query.filter_by(type=4).all()
                 markup = InlineKeyboardMarkup()
                 for t in teams:
                     wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id),
