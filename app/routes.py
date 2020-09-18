@@ -54,7 +54,7 @@ def process_text(message):
         elif text == voting_btn:
             today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
                                   datetime.datetime.now().day)
-            teams = Teams.query.filter(Teams.type in [1,4]).all()
+            teams = Teams.query.filter(Teams.type in ((1,4))).all()
             markup = InlineKeyboardMarkup()
             for t in teams:
                 wm = WeeklyVoting.query.filter(WeeklyVoting.user_id == get_id(user_id), WeeklyVoting.team_id == t.id,
