@@ -55,7 +55,7 @@ def process_text(message):
                 except:
                     pass
             bot.send_message(chat_id, 'Оповещения отправлены')
-        elif text == voting_btn:
+        elif text == voting_btn and (isAdmin(user_id) or isTeamLead(user_id) or isTracker(user_id) or isChief(user_id)):
             today = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month,
                                   datetime.datetime.now().day)
             teams = Teams.query.filter_by(type=1).all() + Teams.query.filter_by(type=4).all()
@@ -74,7 +74,7 @@ def process_text(message):
             markup.add(InlineKeyboardButton(text='Ось власти', callback_data='alert_voting_3'))
             markup.add(InlineKeyboardButton(text='Отмена', callback_data='alert_voting_4'))
             bot.send_message(chat_id, 'Выберите ось', reply_markup=markup)
-        elif text == weekly_vote_members:
+        elif text == weekly_vote_members and isTeamLead(user_id):
             cadet_id = get_id(user_id)
             teams = Membership.query.filter_by(user_id=cadet_id).all()
             tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type == 1][0]

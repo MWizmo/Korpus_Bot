@@ -26,6 +26,18 @@ def isAdmin(tg_id):
     return 1 in getStatus(tg_id)
 
 
+def isTracker(tg_id):
+    return 5 in getStatus(tg_id)
+
+
+def isTeamLead(tg_id):
+    return 4 in getStatus(tg_id)
+
+
+def isChief(tg_id):
+    return 2 in getStatus(tg_id)
+
+
 def getKeyboard(id):
     markup = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     status = getStatus(id)
