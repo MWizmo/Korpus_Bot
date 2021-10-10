@@ -10,21 +10,24 @@ blueprint = blueprints.Blueprint('blueprint', __name__)
 
 @blueprint.route('/tg', methods=['POST'])
 def answer_telegram():
-    update = request.get_json()
-    if 'message' in update:
-        message = update.get('message')
-        if message.get('text'):
-            process_text(message)
-        elif message.get('photo'):
-            process_image(message)
+    try:
+        update = request.get_json()
+        if 'message' in update:
+            message = update.get('message')
+            if message.get('text'):
+                process_text(message)
+            elif message.get('photo'):
+                process_image(message)
+            else:
+                print(message)
+        elif 'callback_query' in update:
+            callback = update.get('callback_query')
+            process_callback(callback)
         else:
-            print(message)
-    elif 'callback_query' in update:
-        callback = update.get('callback_query')
-        process_callback(callback)
-    else:
-        print(update)
-    return "Message Processed"
+            print(update)
+        return "Message Processed"
+    except Exception as e:
+        print(e)
 
 
 def process_text(message):
