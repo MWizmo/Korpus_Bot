@@ -25,9 +25,10 @@ def answer_telegram():
             process_callback(callback)
         else:
             print(update)
-        return "Message Processed"
     except Exception as e:
         print(e)
+    finally:
+        return "Message Processed"
 
 
 def process_text(message):
