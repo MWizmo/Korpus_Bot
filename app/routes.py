@@ -463,7 +463,7 @@ def start(message):
     if isUserInDb(message['from']['username']):
         if not (checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
             bot.send_message(message['chat']['id'],
-                             "Для упрощения нашего взаимодействия через систему загрузите, пожалуйста, свою фотографию.")
+                             "Для упрощения нашего взаимодействия через систему загрузите, пожалуйста, свою фотографию. Обратите внимание, что фотографию надо присылать в сжатом виде и не в качестве прикрепляемого документа")
             setState(message['from']['id'], 2)
         else:
             setState(message['from']['id'], 1)
