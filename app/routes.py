@@ -77,7 +77,7 @@ def process_text(message):
         elif text == weekly_vote_members and isTeamLead(user_id):
             cadet_id = get_id(user_id)
             teams = Membership.query.filter_by(user_id=cadet_id).all()
-            tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type == 1][0]
+            tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type in [1,4]][0]
             team = get_cadets_for_choosing(tid, user_id)
             markup = InlineKeyboardMarkup()
             for cadet in team:
