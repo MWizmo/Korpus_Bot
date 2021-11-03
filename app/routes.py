@@ -345,16 +345,17 @@ def process_callback(callback):
         bot.delete_message(chat_id=chat_id, message_id=message_id)
         if tid == 0:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
-        team = get_cadets_for_choosing(tid, user_id)
-        markup = InlineKeyboardMarkup()
-        for cadet in team:
-            markup.add(InlineKeyboardButton(text=cadet[1],
-                                            callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
-        markup.add(InlineKeyboardButton(text='<Закончить выбор>',
-                                        callback_data='choose_members_for_wv_0_0'))
-        # markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
-        bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
-                         reply_markup=markup)
+        else:
+            team = get_cadets_for_choosing(tid, user_id)
+            markup = InlineKeyboardMarkup()
+            for cadet in team:
+                markup.add(InlineKeyboardButton(text=cadet[1],
+                                                callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+            markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+                                            callback_data='choose_members_for_wv_0_0'))
+            # markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+                             reply_markup=markup)
     elif data.startswith('choose_team_'):
         tid = int(data.split('_')[-1])
         bot.delete_message(chat_id=chat_id, message_id=message_id)
