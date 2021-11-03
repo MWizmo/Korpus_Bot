@@ -77,17 +77,47 @@ def process_text(message):
         elif text == weekly_vote_members and isTeamLead(user_id):
             cadet_id = get_id(user_id)
             teams = Membership.query.filter_by(user_id=cadet_id).all()
-            tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type in [1,4]][0]
-            team = get_cadets_for_choosing(tid, user_id)
-            markup = InlineKeyboardMarkup()
-            for cadet in team:
-                markup.add(InlineKeyboardButton(text=cadet[1],
-                                                callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
-            markup.add(InlineKeyboardButton(text='<Закончить выбор>',
-                                            callback_data='choose_members_for_wv_0_0'))
-            #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
-            bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
-                             reply_markup=markup)
+            my_teams = []
+            for t in teams:
+                if TeamRoles.query.filter(TeamRoles.team_id == t.team_id, TeamRoles.user_id == cadet_id,
+                                          TeamRoles.role_id == 1).first():
+                    my_teams.append(t)
+            my_teams_ids = [t.team_id for t in my_teams if Teams.query.filter_by(id=t.team_id).first().type in [1, 4]]
+            if len(my_teams_ids) == 1:
+                team = get_cadets_for_choosing(my_teams_ids[0], user_id)
+                markup = InlineKeyboardMarkup()
+                for cadet in team:
+                    markup.add(InlineKeyboardButton(text=cadet[1],
+                                                    callback_data='choose_members_for_wv_{}_{}'.format(my_teams_ids[0],
+                                                                                                       cadet[0])))
+                markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+                                                callback_data='choose_members_for_wv_0_0'))
+                markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+                bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+                                 reply_markup=markup)
+            else:
+                markup = InlineKeyboardMarkup()
+                for t_id in my_teams_ids:
+                    team = Teams.query.get(t_id)
+                    markup.add(InlineKeyboardButton(text=team.name, callback_data=f'choose_team_for_wv_{t_id}'))
+                markup.add(InlineKeyboardButton(text='<Назад>', callback_data=f'choose_team_for_wv_0'))
+                bot.send_message(chat_id,
+                                 'Выберите команду для указания участников, которые получат баллы за текущую оценку',
+                                 reply_markup=markup)
+        # elif text == weekly_vote_members and isTeamLead(user_id):
+        #     cadet_id = get_id(user_id)
+        #     teams = Membership.query.filter_by(user_id=cadet_id).all()
+        #     tid = [t.team_id for t in teams if Teams.query.filter_by(id=t.team_id).first().type in [1, 4]][0]
+        #     team = get_cadets_for_choosing(tid, user_id)
+        #     markup = InlineKeyboardMarkup()
+        #     for cadet in team:
+        #         markup.add(InlineKeyboardButton(text=cadet[1],
+        #                                         callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+        #     markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+        #                                     callback_data='choose_members_for_wv_0_0'))
+        #     #markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+        #     bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+        #                      reply_markup=markup)
         elif text == alert_form_btn and isAdmin(user_id):
             cadets = [user for user in User.query.all() if User.check_can_be_marked(user.id)]
             user_names = list()
@@ -309,6 +339,22 @@ def process_callback(callback):
                              'Еще не закончили оценку по оси власти (* - не авторизован в боте):\n' +
                              '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 13)
+    elif data.startswith('choose_team_for_wv_'):
+        tid = int(data.split('_')[-1])
+        cadet_id = get_id(user_id)
+        bot.delete_message(chat_id=chat_id, message_id=message_id)
+        if tid == 0:
+            bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+        team = get_cadets_for_choosing(tid, user_id)
+        markup = InlineKeyboardMarkup()
+        for cadet in team:
+            markup.add(InlineKeyboardButton(text=cadet[1],
+                                            callback_data='choose_members_for_wv_{}_{}'.format(tid, cadet[0])))
+        markup.add(InlineKeyboardButton(text='<Закончить выбор>',
+                                        callback_data='choose_members_for_wv_0_0'))
+        # markup.add(InlineKeyboardButton(text='<Назад>', callback_data='choose_members_for_wv_0_0'))
+        bot.send_message(chat_id, 'Выберите участников команды, которые получат баллы за текущую оценку',
+                         reply_markup=markup)
     elif data.startswith('choose_team_'):
         tid = int(data.split('_')[-1])
         bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -340,7 +386,25 @@ def process_callback(callback):
         cadet_id = int(data.split('_')[-1])
         bot.delete_message(chat_id=chat_id, message_id=message_id)
         if tid == 0:
-            bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+            cadet_id = get_id(user_id)
+            teams = Membership.query.filter_by(user_id=cadet_id).all()
+            my_teams = []
+            for t in teams:
+                if TeamRoles.query.filter(TeamRoles.team_id == t.team_id, TeamRoles.user_id == cadet_id,
+                                          TeamRoles.role_id == 1).first():
+                    my_teams.append(t)
+            my_teams_ids = [t.team_id for t in my_teams if Teams.query.filter_by(id=t.team_id).first().type in [1, 4]]
+            if len(my_teams_ids) == 1:
+                bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+            else:
+                markup = InlineKeyboardMarkup()
+                for t_id in my_teams_ids:
+                    team = Teams.query.get(t_id)
+                    markup.add(InlineKeyboardButton(text=team.name, callback_data=f'choose_team_for_wv_{t_id}'))
+                markup.add(InlineKeyboardButton(text='<Назад>', callback_data=f'choose_team_for_wv_0'))
+                bot.send_message(chat_id,
+                                 'Выберите команду для указания участников, которые получат баллы за текущую оценку',
+                                 reply_markup=markup)
         elif cadet_id == 0:
             message = get_mark_message(user_id, tid)
             markup = InlineKeyboardMarkup()
