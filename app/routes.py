@@ -8,6 +8,14 @@ import requests
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
 
+@blueprint.route('/promocode', methods=['POST'])
+def promocode():
+    user_id = int(request.form.get('user_id'))
+    code = request.form.get('code')
+    user = User.query.get(user_id)
+    bot.send_message(user.chat_id, 'Ваш промокод: ' + code)
+
+
 @blueprint.route('/tg', methods=['POST'])
 def answer_telegram():
     try:
