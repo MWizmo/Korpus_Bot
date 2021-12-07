@@ -13,7 +13,9 @@ def promocode():
     user_id = int(request.form.get('user_id'))
     code = request.form.get('code')
     user = User.query.get(user_id)
+    print(f'User {user_id}, chat_id {user.chat_id}, code {code}')
     bot.send_message(user.chat_id, 'Ваш промокод: ' + code)
+    return "Message Processed"
 
 
 @blueprint.route('/tg', methods=['POST'])
