@@ -34,10 +34,10 @@ class User(db.Model):
         statuses = UserStatuses.query.filter_by(user_id=current_user_id).all()
         for status in statuses:
             if status.status_id == 3:
-                teams = Membership.query.filter_by(user_id=current_user_id).all()
-                for t in teams:
-                    team = Teams.query.filter_by(id=t.team_id).first()
-                    if team.type and team.type == 1:
+                # teams = Membership.query.filter_by(user_id=current_user_id).all()
+                # for t in teams:
+                #     team = Teams.query.filter_by(id=t.team_id).first()
+                #     if team.type and team.type == 1:
                         return True
         return False
 
