@@ -18,6 +18,20 @@ def promocode():
     return "Message Processed"
 
 
+@blueprint.route('/weekly_remind', methods=['POST'])
+def weekly_remind():
+    bot.send_message(364905251, 'Test')
+    return "Message Processed"
+    users = User.query.all()
+    for user in users:
+        try:
+            status = getStatus(user.tg_id)
+            if 2 in status or 4 in status or 5 in status:
+                bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+        except:
+            pass
+
+
 @blueprint.route('/tg', methods=['POST'])
 def answer_telegram():
     try:
