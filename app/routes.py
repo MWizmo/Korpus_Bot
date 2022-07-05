@@ -20,8 +20,6 @@ def promocode():
 
 @blueprint.route('/weekly_remind', methods=['POST'])
 def weekly_remind():
-    bot.send_message(364905251, 'Test')
-    return "Message Processed"
     users = User.query.all()
     for user in users:
         try:
