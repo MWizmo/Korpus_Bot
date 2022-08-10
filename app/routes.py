@@ -30,6 +30,21 @@ def weekly_remind():
             pass
 
 
+@blueprint.route('/send_weekly_results')
+def send_weekly_results():
+    r = requests.get('http://lk.korpus.io/send_results_of_weekly_voting')
+    results = r.json()
+    for team in results['results']:
+        if team['team_id'] == 18:
+            for user in team['marks']:
+                mess = f'''Сегодня проходила еженедельная оценка, в рамках этой оценки вы получили следующие баллы ({team["marks"][user]["name"]}):
+                            <b>{team["team"]}</b>
+                            Движение - {team["marks"][user]["marks1"][0]}
+                            Завершённость - {team["marks"][user]["marks2"][0]}
+                            Подтверждение средой - {team["marks"][user]["marks3"][0]}'''
+                bot.send_message(303739807, mess, parse_mode='HTML')
+
+
 @blueprint.route('/tg', methods=['POST'])
 def answer_telegram():
     try:
