@@ -43,6 +43,7 @@ def send_weekly_results():
                             Завершённость - {team["marks"][user]["marks2"][0]}
                             Подтверждение средой - {team["marks"][user]["marks3"][0]}'''
                 bot.send_message(303739807, mess, parse_mode='HTML')
+    return "Message Processed"
 
 
 @blueprint.route('/tg', methods=['POST'])
