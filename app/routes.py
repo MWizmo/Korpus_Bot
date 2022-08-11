@@ -37,7 +37,7 @@ def send_weekly_results():
     for team in results['results']:
         #if team['team_id'] == 18:
             for user in team['marks']:
-                mess = f'''Вчера проходила еженедельная оценка.\nВ рамках этой оценки вы получили следующие баллы:\n<b>{team["team"]}</b>\nДвижение - {team["marks"][user]["marks1"][0]}\nЗавершённость - {team["marks"][user]["marks2"][0]}\nПодтверждение средой - {team["marks"][user]["marks3"][0]}'''
+                mess = f'''Сегодня проходила еженедельная оценка.\nВ рамках этой оценки вы получили следующие баллы:\n<b>{team["team"]}</b>\nДвижение - {team["marks"][user]["marks1"][0]}\nЗавершённость - {team["marks"][user]["marks2"][0]}\nПодтверждение средой - {team["marks"][user]["marks3"][0]}'''
                 user = User.query.get(team["marks"][user]['user_id'])
                 keyboard = InlineKeyboardMarkup()
                 keyboard.add(InlineKeyboardButton('Детали', callback_data=f"details_{team['team_id']}_{results['date']}_{user.id}"))
