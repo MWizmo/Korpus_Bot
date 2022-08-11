@@ -37,12 +37,12 @@ def send_weekly_results():
     for team in results['results']:
         if team['team_id'] == 18:
             for user in team['marks']:
-                mess = f'''Сегодня проходила еженедельная оценка, в рамках этой оценки вы получили следующие баллы ({team["marks"][user]["name"]}):
-                            <b>{team["team"]}</b>
-                            Движение - {team["marks"][user]["marks1"][0]}
-                            Завершённость - {team["marks"][user]["marks2"][0]}
-                            Подтверждение средой - {team["marks"][user]["marks3"][0]}'''
-                bot.send_message(303739807, mess, parse_mode='HTML')
+                mess = f'''Вчера проходила еженедельная оценка.\nВ рамках этой оценки вы получили следующие баллы:\n<b>{team["team"]}</b>\nДвижение - {team["marks"][user]["marks1"][0]}\nЗавершённость - {team["marks"][user]["marks2"][0]}\nПодтверждение средой - {team["marks"][user]["marks3"][0]}'''
+                user = User.query.get(team["marks"][user]['user_id'])
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"details_{team['team_id']}_{results['date']}_{user.id}"))
+                #if user.chat_id == '364905251':
+                bot.send_message(int(user.chat_id), mess, parse_mode='HTML', reply_markup=keyboard)
     return "Message Processed"
 
 
@@ -560,6 +560,31 @@ def process_callback(callback):
             bot.edit_message_text(message + 'Выберите критерий для оценки', chat_id, message_id, parse_mode='HTML',
                                   reply_markup=markup)
             # bot.send_message(chat_id, message + 'Выберите критерий для оценки', reply_markup=markup, parse_mode='HTML')
+    elif data.startswith('details_'):
+        items = data.split('_')
+        team_id = int(items[1])
+        date = datetime.datetime.strptime(items[2], '%d.%m.%Y')
+        user_id = int(items[3])
+        text = 'Вот как вас оценили:\n<b>Движение</b>\n'
+        marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
+                                          WeeklyVoting.criterion_id == 4, WeeklyVoting.finished == 1).all()
+        for mark in marks:
+            user = User.query.get(mark.user_id)
+            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+        text += '\n<b>Завершённость</b>\n'
+        marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
+                                          WeeklyVoting.criterion_id == 5, WeeklyVoting.finished == 1).all()
+        for mark in marks:
+            user = User.query.get(mark.user_id)
+            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+        text += '\n<b>Подтверждение средой</b>\n'
+        marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
+                                          WeeklyVoting.criterion_id == 6, WeeklyVoting.finished == 1).all()
+        for mark in marks:
+            user = User.query.get(mark.user_id)
+            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+        text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
+        bot.send_message(chat_id, text, parse_mode='HTML')
 
 
 def start(message):
