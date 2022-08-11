@@ -46,6 +46,7 @@ def send_weekly_results():
                     bot.send_message(int(user.chat_id), mess, parse_mode='HTML', reply_markup=keyboard)
                 except Exception as e:
                     print(e)
+                    print(f'User {user.id}')
     return "Message Processed"
 
 
