@@ -8,6 +8,18 @@ import requests
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
 
+@blueprint.route('/ping', methods=['POST'])
+def ping_user():
+    try:
+        user_id = int(request.form.get('user_id'))
+        user = User.query.get(user_id)
+        bot.send_message(user.chat_id, 'Проверка связи')
+        return "Message Processed"
+    except Exception as e:
+        print(e)
+        return str(e)
+
+
 @blueprint.route('/promocode', methods=['POST'])
 def promocode():
     user_id = int(request.form.get('user_id'))
