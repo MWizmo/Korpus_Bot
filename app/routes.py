@@ -217,7 +217,7 @@ def process_text(message):
             month = datetime.datetime.now().month
             for user in cadets:
                 if len(Questionnaire.query.filter(Questionnaire.user_id == user.id,
-                                                  func.month(Questionnaire.date) == month).all()) < 2:
+                                                  func.month(Questionnaire.date) == month).all()) < 1:
                     if user.tg_id:
                         bot.send_message(user.chat_id, text)
 
