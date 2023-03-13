@@ -8,6 +8,18 @@ import requests
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
 
+@blueprint.route('/ping', methods=['POST'])
+def ping_user():
+    try:
+        user_id = int(request.form.get('user_id'))
+        user = User.query.get(user_id)
+        bot.send_message(user.chat_id, 'Проверка связи')
+        return "Message Processed"
+    except Exception as e:
+        print(e)
+        return str(e)
+
+
 @blueprint.route('/promocode', methods=['POST'])
 def promocode():
     user_id = int(request.form.get('user_id'))
@@ -173,7 +185,7 @@ def process_text(message):
                 if len(Questionnaire.query.filter(Questionnaire.user_id == user.id,
                                                   func.month(Questionnaire.date) == month).all()) + len(
                     Questionnaire.query.filter(Questionnaire.user_id == user.id,
-                                               func.month(Questionnaire.date) == month - 1).all()) < 2:
+                                               func.month(Questionnaire.date) == month - 1).all()) < 1:
                     if user.tg_id:
                         user_names.append('{} {}'.format(user.name, user.surname))
                     else:
@@ -210,7 +222,7 @@ def process_text(message):
             month = datetime.datetime.now().month
             for user in cadets:
                 if len(Questionnaire.query.filter(Questionnaire.user_id == user.id,
-                                                  func.month(Questionnaire.date) == month).all()) < 2:
+                                                  func.month(Questionnaire.date) == month).all()) < 1:
                     if user.tg_id:
                         bot.send_message(user.chat_id, text)
 
