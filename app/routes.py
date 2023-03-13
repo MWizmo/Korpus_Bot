@@ -25,7 +25,10 @@ def weekly_remind():
         try:
             status = getStatus(user.tg_id)
             if 2 in status or 4 in status or 5 in status:
-                bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton(text="Ссылка на трекшен",
+                                                  url="https://us02web.zoom.us/j/87112498599?pwd=WFdZZnZKQldiWmxGRklUVmwrQUowZz09"))
+                bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?', reply_markup=keyboard)
         except:
             pass
 
@@ -93,7 +96,9 @@ def process_text(message):
                 try:
                     status = getStatus(user.tg_id)
                     if 2 in status or 4 in status or 5 in status:
-                        bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?')
+                        keyboard = InlineKeyboardMarkup()
+                        keyboard.add(InlineKeyboardButton(text="Ссылка на трекшен", url="https://us02web.zoom.us/j/87112498599?pwd=WFdZZnZKQldiWmxGRklUVmwrQUowZz09"))
+                        bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?', reply_markup=keyboard)
                 except:
                     pass
             bot.send_message(chat_id, 'Оповещения отправлены')
