@@ -255,7 +255,8 @@ def process_text(message):
             bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
             setState(user_id, 1)
         else:
-            users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id))]
+            users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id) or
+                                                           User.check_teamlead(user.id))]
             month = datetime.datetime.now().month
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
             error_users = []
@@ -385,7 +386,8 @@ def process_callback(callback):
                              '\n'.join(user_names) + '\n\nВведите сообщение', reply_markup=markup)
             setState(user_id, 11)
         elif axis == 2:
-            users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id))]
+            users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id) or
+                                                           User.check_teamlead(user.id))]
             user_names = list()
             month = datetime.datetime.now().month
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
