@@ -246,7 +246,7 @@ def process_text(message):
                             bot.send_message(user.chat_id, text)
                 except Exception as e:
                     error_users.append(User.get_full_name(user.id))
-                    print("--Alert relations axis: ", e)
+                    print("-- Alert Relations axis: ", e)
             error_text = '' if len(error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(error_users)
             bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
@@ -268,7 +268,7 @@ def process_text(message):
                             bot.send_message(user.chat_id, text)
                 except Exception as e:
                     error_users.append(User.get_full_name(user.id))
-                    print("--Business relations axis: ", e)
+                    print("-- Alert Business axis: ", e)
             error_text = '' if len(
                 error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(
                 error_users)
@@ -290,7 +290,7 @@ def process_text(message):
                             bot.send_message(user.chat_id, text)
                 except Exception as e:
                     error_users.append(User.get_full_name(user.id))
-                    print("--Alert relations axis: ", e)
+                    print("-- Alert Authority axis: ", e)
             error_text = '' if len(
                 error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(
                 error_users)
