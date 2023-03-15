@@ -236,13 +236,19 @@ def process_text(message):
             users = [user for user in User.query.all() if User.check_top_cadet(user.id)]
             month = datetime.datetime.now().month
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
+            error_users = []
             for user in users:
-                if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month,
-                                           Voting.axis_id == 1).all()) < marked_teams_num:
-                    if user.tg_id:
-                        bot.send_message(user.chat_id, text)
-            bot.send_message(chat_id, 'Успешно', reply_markup=getKeyboard(user_id))
+                try:
+                    if len(Voting.query.filter(Voting.user_id == user.id,
+                                               func.month(Voting.date) == month,
+                                               Voting.axis_id == 1).all()) < marked_teams_num:
+                        if user.tg_id:
+                            bot.send_message(user.chat_id, text)
+                except Exception as e:
+                    error_users.append(User.get_full_name(user.id))
+                    print("--Alert relations axis: ", e)
+            error_text = '' if len(error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(error_users)
+            bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
     elif state == 12:
         if text == 'Отмена':
@@ -252,13 +258,21 @@ def process_text(message):
             users = [user for user in User.query.all() if (User.check_expert(user.id) or User.check_tracker(user.id))]
             month = datetime.datetime.now().month
             marked_teams_num = len(Teams.query.filter_by(type=1).all())
+            error_users = []
             for user in users:
-                if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month,
-                                           Voting.axis_id == 2).all()) < marked_teams_num:
-                    if user.tg_id:
-                        bot.send_message(user.chat_id, text)
-            bot.send_message(chat_id, 'Успешно', reply_markup=getKeyboard(user_id))
+                try:
+                    if len(Voting.query.filter(Voting.user_id == user.id,
+                                               func.month(Voting.date) == month,
+                                               Voting.axis_id == 2).all()) < marked_teams_num:
+                        if user.tg_id:
+                            bot.send_message(user.chat_id, text)
+                except Exception as e:
+                    error_users.append(User.get_full_name(user.id))
+                    print("--Business relations axis: ", e)
+            error_text = '' if len(
+                error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(
+                error_users)
+            bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
     elif state == 13:
         if text == 'Отмена':
@@ -267,12 +281,20 @@ def process_text(message):
         else:
             users = [user for user in User.query.all() if User.check_chieftain(user.id)]
             month = datetime.datetime.now().month
+            error_users = []
             for user in users:
-                if len(Voting.query.filter(Voting.user_id == user.id,
-                                           func.month(Voting.date) == month, Voting.axis_id == 3).all()) < 1:
-                    if user.tg_id:
-                        bot.send_message(user.chat_id, text)
-            bot.send_message(chat_id, 'Успешно', reply_markup=getKeyboard(user_id))
+                try:
+                    if len(Voting.query.filter(Voting.user_id == user.id,
+                                               func.month(Voting.date) == month, Voting.axis_id == 3).all()) < 1:
+                        if user.tg_id:
+                            bot.send_message(user.chat_id, text)
+                except Exception as e:
+                    error_users.append(User.get_full_name(user.id))
+                    print("--Alert relations axis: ", e)
+            error_text = '' if len(
+                error_users) == 0 else '\nСообщения следующим пользователям не доставлены (см. логи): ' + ', '.join(
+                error_users)
+            bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
 
 
