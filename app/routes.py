@@ -102,6 +102,12 @@ def process_text(message):
             bot.send_message(chat_id, 'Выберите действие', reply_markup=getAdminKeyboard())
         elif text == back_btn:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
+        elif text == alert_results_btn and isAdmin(user_id):
+            setState(user_id, 101)
+            keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+            keyboard.add('Да')
+            keyboard.add(back_btn)
+            bot.send_message(chat_id, 'Разослать всем участвующим в оценке предварительные результаты?', reply_markup=keyboard)
         elif text == weekly_vote_btn:
             users = User.query.all()
             for user in users:
@@ -297,6 +303,35 @@ def process_text(message):
                 error_users)
             bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
+    elif state == 101:
+        if text == 'Отмена':
+            bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
+            setState(user_id, 1)
+        elif text == 'Да':
+            users_summary = getUsersSummaryFromVoting()
+            for user in users_summary:
+                bot.send_message(user, 'Сегодня были сформированы предварительные результаты ежемесячной оценки')
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails3"))
+                bot.send_message(user,
+                                 f'По оси Власти вам выставили следующие оценки:\n\tУправляемость - {users_summary[user]["7"]}\n\tСамоуправление - {users_summary[user]["8"]}\n\tСтратегия - {users_summary[user]["9"]}',
+                                 reply_markup=keyboard)
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails1"))
+                bot.send_message(user,
+                                 f'По оси Отношений вам выставили следующие оценки:\n\tЯсность позиции - {users_summary[user]["2"]}\n\tЭнергия - {users_summary[user]["3"]}\n\tЛичностный рост - {users_summary[user]["1"]}',
+                                 reply_markup=keyboard)
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails2"))
+                bot.send_message(user,
+                                 f'По оси Дела вам выставили следующие оценки:\n\tДвижение - {users_summary[user]["4"]}\n\tЗавершенность - {users_summary[user]["5"]}\n\tПодтверждение средой - {users_summary[user]["6"]}',
+                                 reply_markup=keyboard)
+        else:
+            keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+            keyboard.add('Да')
+            keyboard.add(back_btn)
+            bot.send_message(chat_id, 'Неизвестный ответ. Разослать всем участвующим в оценке предварительные результаты?',
+                             reply_markup=keyboard)
 
 
 def process_image(message):

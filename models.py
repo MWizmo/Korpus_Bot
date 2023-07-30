@@ -287,3 +287,49 @@ class WeeklyVotingMembers(db.Model):
     cadet_id = db.Column(db.Integer)
     team_id = db.Column(db.Integer)
     date = db.Column(db.Date)
+
+class VotingTable(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.String(16))
+    month_from = db.Column(db.String(32))
+    month_to = db.Column(db.String(32))
+
+    @staticmethod
+    def is_opened():
+        return len(VotingTable.query.filter_by(status='Active').all()) > 0
+
+    @staticmethod
+    def current_voting_id():
+        return VotingTable.query.filter_by(status='Active').first().id
+
+    @staticmethod
+    def current_fixed_voting_id():
+        a = VotingTable.query.filter_by(status='Fixed').all()
+        if a:
+            return a[-1].id
+        else:
+            return 0
+
+    @staticmethod
+    def current_emission_voting_id():
+        a = VotingTable.query.filter_by(status='Emission').all()
+        if a:
+            return a[-1].id
+        else:
+            return 0
+
+    @staticmethod
+    def current_distribution_voting_id():
+        a = VotingTable.query.filter_by(status='Distribution').all()
+        if a:
+            return a[-1].id
+        else:
+            return 0
+
+
+class VotingInfo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    voting_id = db.Column(db.Integer)
+    cadet_id = db.Column(db.Integer)
+    criterion_id = db.Column(db.Integer)
+    mark = db.Column(db.Integer)

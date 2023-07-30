@@ -1,6 +1,7 @@
 from models import *
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from buttons import *
+from sqlalchemy import func
 
 
 def isUserInDb(username):
@@ -59,6 +60,7 @@ def getAdminKeyboard():
     keyboard.add(alert_form_btn)
     keyboard.add(alert_voting_btn)
     keyboard.add(weekly_vote_btn)
+    keyboard.add(alert_results_btn)
     keyboard.add(back_btn)
     return keyboard
 
@@ -165,3 +167,26 @@ def get_id(tg_id):
         return user.id
     else:
         return -1
+
+
+def getUsersSummaryFromVoting():
+    cur_voting = VotingTable.query.filter_by(status='Active').first()
+    if cur_voting:
+        voting_id = cur_voting.id
+    else:
+        voting_id = VotingTable.query.filter_by(status='Finished').all()[-1].id
+    users = [(user.id, user.chat_id) for user in User.query.all() if User.check_can_be_marked(user.id)]
+    users_summary = {}
+    for user in users:
+        users_summary[user[1]] = {}
+        user_res = db.session.query(func.avg(VotingInfo.mark), VotingInfo.criterion_id).outerjoin(Voting,
+                                                                         Voting.id == VotingInfo.voting_id).filter(
+            Voting.voting_id == voting_id, VotingInfo.cadet_id == user[0]).group_by(
+            VotingInfo.criterion_id).all()
+        for mark in user_res:
+            if float(mark[0]) < 1.0:
+                user_mark = 0
+            else:
+                user_mark = 1
+            users_summary[user[1]][str(mark[1])] = user_mark
+    return users_summary
