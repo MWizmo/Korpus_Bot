@@ -304,7 +304,7 @@ def process_text(message):
             bot.send_message(chat_id, 'Успешно' + error_text, reply_markup=getKeyboard(user_id))
             setState(user_id, 1)
     elif state == 101:
-        if text == 'Отмена':
+        if text == back_btn:
             bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
             setState(user_id, 1)
         elif text == 'Да':

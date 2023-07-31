@@ -264,11 +264,36 @@ class Log(db.Model):
 
 
 class Voting(db.Model):
+    @staticmethod
+    def check_on_assessment(current_user_id, team_id, axis_id):
+        if axis_id == 3:
+            last_voting = Voting.query.filter_by(
+                user_id=current_user_id, team_id=0, axis_id=axis_id
+            ).all()
+            if last_voting:
+                last_voting = last_voting[-1].voting_id
+            else:
+                return True
+        else:
+            last_voting = Voting.query.filter_by(user_id=current_user_id, team_id=team_id, axis_id=axis_id).all()
+            if last_voting:
+                last_voting = last_voting[-1].voting_id
+            else:
+                return True
+        if last_voting:
+            if last_voting == VotingTable.current_voting_id():
+                return False
+            else:
+                return True
+        else:
+            return True
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
     team_id = db.Column(db.Integer)
     date = db.Column(db.Date)
     axis_id = db.Column(db.Integer)
+    voting_id= db.Column(db.Integer)
 
 
 class WeeklyVoting(db.Model):
