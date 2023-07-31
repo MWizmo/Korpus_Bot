@@ -4,6 +4,7 @@ from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
 import requests
+from telebot.apihelper import ApiException
 
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
@@ -41,8 +42,8 @@ def weekly_remind():
                 keyboard.add(InlineKeyboardButton(text="Ссылка на трекшен",
                                                   url="https://us02web.zoom.us/j/6012018339?pwd=SUx3V0FiT1RaM3ZJOGQvbHhXZ1ArUT09"))
                 bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?', reply_markup=keyboard)
-        except:
-            pass
+        except ApiException as e:
+            print(f"Exception for user with id {user.id}: {str(e)}")
 
 
 @blueprint.route('/send_weekly_results', methods=['POST'])
@@ -308,24 +309,32 @@ def process_text(message):
             bot.send_message(chat_id, 'Функции администратора', reply_markup=getAdminKeyboard())
             setState(user_id, 1)
         elif text == 'Да':
-            users_summary = getUsersSummaryFromVoting()
+            voting_id, users_summary = getUsersSummaryFromVoting()
+            if voting_id is None:
+                bot.send_message(chat_id, 'В настоящее время нет активной оценки', reply_markup=getAdminKeyboard())
+                setState(user_id, 1)
             for user in users_summary:
-                bot.send_message(user, 'Сегодня были сформированы предварительные результаты ежемесячной оценки')
-                keyboard = InlineKeyboardMarkup()
-                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails3"))
-                bot.send_message(user,
-                                 f'По оси Власти вам выставили следующие оценки:\n\tУправляемость - {users_summary[user]["7"]}\n\tСамоуправление - {users_summary[user]["8"]}\n\tСтратегия - {users_summary[user]["9"]}',
-                                 reply_markup=keyboard)
-                keyboard = InlineKeyboardMarkup()
-                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails1"))
-                bot.send_message(user,
-                                 f'По оси Отношений вам выставили следующие оценки:\n\tЯсность позиции - {users_summary[user]["2"]}\n\tЭнергия - {users_summary[user]["3"]}\n\tЛичностный рост - {users_summary[user]["1"]}',
-                                 reply_markup=keyboard)
-                keyboard = InlineKeyboardMarkup()
-                keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails2"))
-                bot.send_message(user,
-                                 f'По оси Дела вам выставили следующие оценки:\n\tДвижение - {users_summary[user]["4"]}\n\tЗавершенность - {users_summary[user]["5"]}\n\tПодтверждение средой - {users_summary[user]["6"]}',
-                                 reply_markup=keyboard)
+                try:
+                    bot.send_message(user, 'Сегодня были сформированы предварительные результаты ежемесячной оценки')
+                    keyboard = InlineKeyboardMarkup()
+                    keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails_{user}_{voting_id}_3"))
+                    bot.send_message(user,
+                                     f'По оси Власти вам выставили следующие оценки:\n\tУправляемость - {markFromUserSummary(users_summary[user], "7")}\n\tСамоуправление - {markFromUserSummary(users_summary[user], "8")}\n\tСтратегия - {markFromUserSummary(users_summary[user], "9")}',
+                                     reply_markup=keyboard)
+                    keyboard = InlineKeyboardMarkup()
+                    keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails_{user}_{voting_id}_1"))
+                    bot.send_message(user,
+                                     f'По оси Отношений вам выставили следующие оценки:\n\tЯсность позиции - {markFromUserSummary(users_summary[user], "2")}\n\tЭнергия - {markFromUserSummary(users_summary[user], "3")}\n\tЛичностный рост - {markFromUserSummary(users_summary[user], "1")}',
+                                     reply_markup=keyboard)
+                    keyboard = InlineKeyboardMarkup()
+                    keyboard.add(InlineKeyboardButton('Детали', callback_data=f"votingdetails_{user}_{voting_id}_2"))
+                    bot.send_message(user,
+                                     f'По оси Дела вам выставили следующие оценки:\n\tДвижение - {markFromUserSummary(users_summary[user], "4")}\n\tЗавершенность - {markFromUserSummary(users_summary[user], "5")}\n\tПодтверждение средой - {markFromUserSummary(users_summary[user], "6")}',
+                                     reply_markup=keyboard)
+                except ApiException as e:
+                    print(f"Exception for user with chat_id {user}: {str(e)}")
+            bot.send_message(chat_id, 'Результаты разосланы', reply_markup=getAdminKeyboard())
+            setState(user_id, 1)
         else:
             keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             keyboard.add('Да')
@@ -665,6 +674,32 @@ def process_callback(callback):
             text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
         bot.send_message(chat_id, text, parse_mode='HTML')
+    elif data.startswith('votingdetails_'):
+        items = data.split('_')
+        user_chat_id = int(items[1])
+        voting_id = int(items[2])
+        axis_id = int(items[3])
+        user_id = User.query.filter_by(chat_id=user_chat_id).first().id
+
+        criterion_dict = {1: {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия'},
+                          2: {4: 'Движение', 5: 'Завершенность', 6: 'Подтверждение средой'},
+                          3: {7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}}
+        criterions = criterion_dict[axis_id]
+        text = 'Вот как вас оценили:\n'
+        for c_id in criterions:
+            text += f"<b>{criterions[c_id]}</b>\n"
+            teams = Membership.query.filter_by(user_id=user_id).all()
+            teams = [team.team_id for team in teams] + [0]
+            votings = []
+            for t in teams:
+                votings += Voting.query.filter(Voting.voting_id == voting_id, Voting.axis_id == axis_id,
+                                               Voting.team_id == t).all()
+            for v in votings:
+                cur_user = User.query.get(v.user_id)
+                mark = VotingInfo.query.filter(VotingInfo.criterion_id == c_id, VotingInfo.cadet_id == user_id, VotingInfo.voting_id == v.id).first()
+                text += f'<i>{User.get_full_name(cur_user.id)}</i> (@{cur_user.tg_nickname}): {mark.mark}\n'
+        text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
+        bot.send_message(user_chat_id, text, parse_mode='HTML')
 
 
 def start(message):
