@@ -39,7 +39,7 @@ def weekly_remind():
             if 2 in status or 4 in status or 5 in status:
                 keyboard = InlineKeyboardMarkup()
                 keyboard.add(InlineKeyboardButton(text="Ссылка на трекшен",
-                                                  url="https://us02web.zoom.us/j/87112498599?pwd=WFdZZnZKQldiWmxGRklUVmwrQUowZz09"))
+                                                  url="https://us02web.zoom.us/j/6012018339?pwd=SUx3V0FiT1RaM3ZJOGQvbHhXZ1ArUT09"))
                 bot.send_message(user.chat_id, 'Привет! Сегодня оцениваем какие-то команды?', reply_markup=keyboard)
         except:
             pass
