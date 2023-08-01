@@ -102,9 +102,10 @@ class User(db.Model):
     chat_id = db.Column(db.String(64))
     state = db.Column(db.Integer)
     photo = db.Column(db.String(512))
+    private_key = db.Column(db.String(256))
 
     def __init__(self, email, login, tg_nickname,
-                 courses, birthday, education, work_exp, sex, name, surname):
+                 courses, birthday, education, work_exp, sex, name, surname, private_key):
         self.name = name
         self.surname = surname
         self.email = email
@@ -115,6 +116,7 @@ class User(db.Model):
         self.education = education
         self.work_exp = work_exp
         self.sex = sex
+        self.private_key = private_key
 
     def __repr__(self):
         return '<User: {}>'.format(self.login)

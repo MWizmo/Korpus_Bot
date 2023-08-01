@@ -1,8 +1,9 @@
-from app import bot
+from app import bot, in_memory_storage
 import bot_config
 from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
+from eth_account import Account
 import requests
 
 blueprint = blueprints.Blueprint('blueprint', __name__)
@@ -94,7 +95,7 @@ def process_text(message):
     user_id = message['from']['id']
     if text == '/start':
         start(message)
-    if getState(user_id) == -1:
+    elif getState(user_id) == -1:
         start(message)
     state = getState(user_id)
     if state == 1:
@@ -630,9 +631,23 @@ def process_callback(callback):
             text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
         bot.send_message(chat_id, text, parse_mode='HTML')
+    elif data == 'register_via_bot':
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
+        in_memory_storage.hset(f"tg_user:{user_id}", mapping={
+            'bot_registration_state': 'firstname_requested',
+            'firstname': '',
+            'lastname': '',
+            'login': '',
+            'password': ''})
+        bot.send_message(chat_id, 'Добро пожаловать в сообщество Korpus. Пожалуйста, введите ваше Имя', reply_markup=markup)
+    elif data == 'cancel_registration':
+        in_memory_storage.delete(f"tg_user:{user_id}")
+        start(callback['message'])
 
 
 def start(message):
+    tg_user_info = in_memory_storage.hgetall(f"tg_user:{message['from']['id']}")
     if isUserInDb(message['from']['username']):
         if not (checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
             bot.send_message(message['chat']['id'],
@@ -642,11 +657,50 @@ def start(message):
             setState(message['from']['id'], 1)
             bot.send_message(message['chat']['id'],
                              "С возвращением!", reply_markup=getKeyboard(message['from']['id']))
+    elif tg_user_info.get(b'bot_registration_state') == b'firstname_requested':
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
+        tg_user_info[b'bot_registration_state'] = 'lastname_requested'
+        tg_user_info[b'firstname'] = message['text']
+        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
+        bot.send_message(message['chat']['id'], 'Введите вашу Фамилию', reply_markup=markup)
+    elif tg_user_info.get(b'bot_registration_state') == b'lastname_requested':
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
+        tg_user_info[b'bot_registration_state'] = 'login_requested'
+        tg_user_info[b'lastname'] = message['text']
+        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
+        bot.send_message(message['chat']['id'], 'Для доступа к личному кабинету вам необходимо придумать Логин. Пожалуйста, введите логин', reply_markup=markup)
+    elif tg_user_info.get(b'bot_registration_state') == b'login_requested':
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
+        tg_user_info[b'bot_registration_state'] = 'password_requested'
+        tg_user_info[b'login'] = message['text']
+        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
+        bot.send_message(message['chat']['id'], 'Придумайте пароль для доступа к личному кабинету', reply_markup=markup)
+    elif tg_user_info.get(b'bot_registration_state') == b'password_requested':
+        eth_account = Account.create()
+        user = User(
+            email='',
+            login=tg_user_info[b'login'],
+            tg_nickname=message['from']['username'],
+            courses='',
+            birthday='',
+            education='Unknown',
+            work_exp='',
+            sex='',
+            name=tg_user_info[b'firstname'],
+            surname=tg_user_info[b'lastname'],
+            private_key=eth_account.key.hex())
+        user.set_password(str(tg_user_info[b'password']))
+        db.session.add(user)
+        db.session.commit()
+        in_memory_storage.delete(f"tg_user:{message['from']['id']}")
+        start(message)
     else:
         markup = InlineKeyboardMarkup()
-        btn_my_site = InlineKeyboardButton(text='Регистрация', url='http://lk.korpus.io/')
-        markup.add(btn_my_site)
+        markup.add(InlineKeyboardButton(text='Регистрация через сайт', url='http://lk.korpus.io/'))
+        markup.add(InlineKeyboardButton(text='Регистрация через бота', callback_data='register_via_bot'))
         bot.send_message(message['chat']['id'],
-                         """Кажется, ты еще не зарегистрирован в системе. Перейди по ссылке для регистрации,
-                         после чего возвращайся и вновь введи /start""",
+                         """Кажется, ты еще не зарегистрирован в системе. Выбери удобный вариант регистрации""",
                          reply_markup=markup)
