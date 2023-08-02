@@ -743,8 +743,7 @@ def process_callback(callback):
             'bot_registration_state': 'firstname_requested',
             'firstname': '',
             'lastname': '',
-            'login': '',
-            'password': ''})
+            'login': ''})
         bot.send_message(chat_id, 'Добро пожаловать в сообщество Korpus. Пожалуйста, введите ваше Имя', reply_markup=markup)
     elif data == 'cancel_registration':
         in_memory_storage.delete(f"tg_user:{user_id}")
@@ -797,7 +796,7 @@ def start(message):
             name=tg_user_info[b'firstname'],
             surname=tg_user_info[b'lastname'],
             private_key=eth_account.key.hex())
-        user.set_password(str(tg_user_info[b'password']))
+        user.set_password(message['text'])
         db.session.add(user)
         db.session.commit()
         setStatusByID(user.id, 3)
