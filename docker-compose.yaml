@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  app:
+    build: ./
+    container_name: korpus-bot
+    restart: unless-stopped
+    tty: true
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "5050:5050"
+    volumes:
+      - .:/usr/src/app
+  db:
+    image: mysql:8.0.31
+    container_name: korpus-bot-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 'korpus_password'
+      MYSQL_PASSWORD: 'korpus_password'
+      MYSQL_USER: 'korpus_user'
+      MYSQL_DATABASE: 'korpus_db'
+    ports:
+      - "3306:3306"
+    volumes:
+      - korpus-data:/var/lib/mysql
+  redis:
+    image: redis:7.0.7-alpine3.17
+    container_name: korpus-bot-redis
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    entrypoint: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:korpus-bot-redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+volumes:
+  korpus-data:
+    external: true
+  redis_data:
+    name: korpus-bot-redis-data
