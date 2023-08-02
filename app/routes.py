@@ -356,8 +356,14 @@ def process_image(message):
         f.close()
         setPhoto(_id, photo_url)
         # bot.send_photo(message['chat']['id'], photo)
-        bot.send_message(message['chat']['id'], 'Добро пожаловать!', reply_markup=getKeyboard(message['from']['id']))
-        setState(message['from']['id'], 1)
+        markup = InlineKeyboardMarkup()
+        fields = ActivityField.query.all()
+        buttons = [InlineKeyboardButton(text=field.name, callback_data=f"set-field-{field.id}") for field in fields]
+        button_chunks = [buttons[offs:offs+4] for offs in range(0, len(buttons), 4)]
+        for chunk in button_chunks:
+            markup.row(*chunk)
+        markup.add(InlineKeyboardButton(text='Подтвердить выбор', callback_data='complete-setting-fields'))
+        bot.send_message(message['chat']['id'], 'Выберите до 3 сфер, наиболее точно отражающих фокус вашей текущей деятельности и экспертизы.', reply_markup=markup)
 
 
 def get_mark_message(user_id, team_id):
@@ -404,6 +410,7 @@ def get_cadets_for_choosing(team_id, user_id):
 def process_callback(callback):
     data = callback['data']
     user_id = callback['from']['id']
+    user = User.query.filter_by(tg_id=user_id).first()
     message_id = callback['message']['message_id']
     chat_id = callback['message']['chat']['id']
     if data.startswith('alert_voting'):
@@ -701,6 +708,34 @@ def process_callback(callback):
                 text += f'<i>{User.get_full_name(cur_user.id)}</i> (@{cur_user.tg_nickname}): {mark.mark}\n'
         text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
         bot.send_message(user_chat_id, text, parse_mode='HTML')
+    elif data.startswith('set-field'):
+        user_fields_count = UserActivityField.query.filter_by(user_id=user.id).count()
+        if user_fields_count == 3:
+            return bot.send_message(chat_id, 'Нельзя выбрать больше трёх сфер деятельности.')
+        field_id = data[len('set-field-'):]
+        field = ActivityField.query.filter_by(id=field_id).first()
+        user_field = UserActivityField.query.filter_by(field_id=field_id, user_id=user.id).first()
+        if field:
+            if user_field:
+                db.session.delete(user_field)
+            else:
+                db.session.add(UserActivityField(user_id=user.id, field_id=field.id))
+            db.session.commit()
+        markup = InlineKeyboardMarkup()
+        fields = ActivityField.query.all()
+        user_fields = UserActivityField.query.filter_by(user_id=user.id).all()
+        buttons = [InlineKeyboardButton(text=f"{field.name}{'🌟' if any(element.field_id == field.id for element in user_fields) else ''}", callback_data=f"set-field-{field.id}") for field in fields]
+        button_chunks = [buttons[offs:offs+4] for offs in range(0, len(buttons), 4)]
+        for chunk in button_chunks:
+            markup.row(*chunk)
+        markup.add(InlineKeyboardButton(text='Подтвердить выбор', callback_data='complete-setting-fields'))
+        bot.send_message(chat_id, 'Выберите до 3 сфер, наиболее точно отражающих фокус вашей текущей деятельности и экспертизы.', reply_markup=markup)
+    elif data == 'complete-setting-fields':
+        user_fields_count = UserActivityField.query.filter_by(user_id=user.id).count()
+        if user_fields_count == 0:
+            return bot.send_message(chat_id, 'Пожалуйста, выберите сферы вашей деятельности.')
+        bot.send_message(chat_id, 'Добро пожаловать!', reply_markup=getKeyboard(user_id))
+        setState(user_id, 1)
     elif data == 'register_via_bot':
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
@@ -765,6 +800,7 @@ def start(message):
         user.set_password(str(tg_user_info[b'password']))
         db.session.add(user)
         db.session.commit()
+        setStatusByID(user.id, 3)
         in_memory_storage.delete(f"tg_user:{message['from']['id']}")
         start(message)
     else:

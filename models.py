@@ -360,3 +360,14 @@ class VotingInfo(db.Model):
     cadet_id = db.Column(db.Integer)
     criterion_id = db.Column(db.Integer)
     mark = db.Column(db.Integer)
+
+
+class ActivityField(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(32))
+
+
+class UserActivityField(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    field_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
