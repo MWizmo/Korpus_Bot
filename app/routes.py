@@ -706,8 +706,77 @@ def process_callback(callback):
                 cur_user = User.query.get(v.user_id)
                 mark = VotingInfo.query.filter(VotingInfo.criterion_id == c_id, VotingInfo.cadet_id == user_id, VotingInfo.voting_id == v.id).first()
                 text += f'<i>{User.get_full_name(cur_user.id)}</i> (@{cur_user.tg_nickname}): {mark.mark}\n'
-        text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
-        bot.send_message(user_chat_id, text, parse_mode='HTML')
+        text += '\nНажмите <b>Обратная связь</b>, если хотите получить комментарий по выставленным оценкам.\nЕсли, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon.\nЕсли у вас нет вопросов по выставленным оценкам, просто проигнорируйте это сообщение.'
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(text='Обратная связь', callback_data=f'feedback1_{axis_id}_{voting_id}'))
+        bot.send_message(user_chat_id, text, parse_mode='HTML', reply_markup=markup)
+    elif data.startswith('feedback1'):
+        items = data.split('_')
+        voting_id = int(items[2])
+        axis_id = int(items[1])
+        criterion_dict = {1: {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия'},
+                          2: {4: 'Движение', 5: 'Завершенность', 6: 'Подтверждение средой'},
+                          3: {7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}}
+        criterions = criterion_dict[axis_id]
+        markup = InlineKeyboardMarkup()
+        for c_id in criterions:
+            markup.add(InlineKeyboardButton(text=criterions[c_id],
+                                            callback_data=f'feedback2_{c_id}_{voting_id}_{axis_id}'))
+        bot.send_message(chat_id, 'Выберите критерий, по которому хотите получить комментарий', parse_mode='HTML', reply_markup=markup)
+    elif data.startswith('feedback2'):
+        items = data.split('_')
+        voting_id = int(items[2])
+        criterion_id = int(items[1])
+        axis_id = int(items[3])
+        markup = InlineKeyboardMarkup()
+        teams = Membership.query.filter_by(user_id=user_id).all()
+        teams = [team.team_id for team in teams] + [0]
+        votings = []
+        for t in teams:
+            votings += Voting.query.filter(Voting.voting_id == voting_id, Voting.axis_id == axis_id,
+                                           Voting.team_id == t).all()
+        for v in votings:
+            cur_user = User.query.get(v.user_id)
+            mark = VotingInfo.query.filter(VotingInfo.criterion_id == criterion_id, VotingInfo.cadet_id == user_id,
+                                           VotingInfo.voting_id == v.id).first()
+            markup.add(InlineKeyboardButton(text=User.get_full_name(cur_user.id),
+                                            callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark}'))
+        markup.add(InlineKeyboardButton(text='Завершить', callback_data=f'feedback3_0_0_0_0_0'))
+        bot.send_message(chat_id, 'Выберите члена коллегии, чей комментарий вы хотите получить', parse_mode='HTML',
+                         reply_markup=markup)
+    elif data.startswith('feedback3'):
+        items = data.split('_')
+        voting_id = int(items[2])
+        criterion_id = int(items[1])
+        axis_id = int(items[3])
+        cur_user_id = int(items[4])
+        mark = int(items[5])
+        if user_id > 0:
+            admins = getAdmins()
+            axises = {1: 'Отношений', 2:'Дела', '3': 'Власти'}
+            criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
+                          6: 'Подтверждение средой',7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
+            for admin in admins:
+                bot.send_message(admin.chat_id, f'<b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(cur_user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>', parse_mode='HTML')
+            markup = InlineKeyboardMarkup()
+            teams = Membership.query.filter_by(user_id=user_id).all()
+            teams = [team.team_id for team in teams] + [0]
+            votings = []
+            for t in teams:
+                votings += Voting.query.filter(Voting.voting_id == voting_id, Voting.axis_id == axis_id,
+                                               Voting.team_id == t).all()
+            for v in votings:
+                cur_user = User.query.get(v.user_id)
+                mark = VotingInfo.query.filter(VotingInfo.criterion_id == criterion_id, VotingInfo.cadet_id == user_id,
+                                               VotingInfo.voting_id == v.id).first()
+                markup.add(InlineKeyboardButton(text=User.get_full_name(cur_user.id),
+                                                callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark}'))
+            markup.add(InlineKeyboardButton(text='Завершить', callback_data=f'feedback3_0_0_0_0_0'))
+            bot.send_message(chat_id, f'{User.get_full_name(get_id(cur_user_id))} получил ваш запрос на комментарий к оценке. Выберите члена коллегии, чей ещё комментарий вы хотели бы получить, или нажмите “Завершить“', parse_mode='HTML',
+                             reply_markup=markup)
+        else:
+            bot.send_message('Главное меню', reply_markup=getKeyboard(user_id))
+
     elif data.startswith('set-field'):
         user_fields_count = UserActivityField.query.filter_by(user_id=user.id).count()
         if user_fields_count == 3:

@@ -2,6 +2,7 @@ from models import *
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from buttons import *
 from sqlalchemy import func
+from telebot.apihelper import ApiException
 
 
 def isUserInDb(username):
@@ -22,6 +23,18 @@ def checkBotRegistration(username, tg_id, chat_id):
     else:
         return True
 
+
+def getAdmins():
+    users = User.query.all()
+    admins = []
+    for user in users:
+        try:
+            status = getStatus(user.tg_id)
+            if 1 in status:
+                admins.append(user)
+        except ApiException as e:
+            print(f"Exception for user with id {user.id}: {str(e)}")
+    return admins
 
 def isAdmin(tg_id):
     return 1 in getStatus(tg_id)
@@ -60,7 +73,8 @@ def getAdminKeyboard():
     keyboard.add(alert_form_btn)
     keyboard.add(alert_voting_btn)
     keyboard.add(weekly_vote_btn)
-    keyboard.add(alert_results_btn)
+    if len(VotingTable.query.filter_by(status='Fixed').all()):
+        keyboard.add(alert_results_btn)
     keyboard.add(back_btn)
     return keyboard
 
