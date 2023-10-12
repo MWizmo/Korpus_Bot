@@ -86,6 +86,12 @@ def getState(id):
     else:
         return -1
 
+def getExtra(id):
+    user = User.query.filter_by(tg_id=id).first()
+    if user:
+        return user.extra
+    else:
+        return ''
 
 def setState(id, state):
     user = User.query.filter_by(tg_id=id).first()
@@ -93,6 +99,11 @@ def setState(id, state):
         user.state = state
         db.session.commit()
 
+def setExtra(id, extra):
+    user = User.query.filter_by(tg_id=id).first()
+    if user:
+        user.extra = extra
+        db.session.commit()
 
 def setPhoto(id, photo):
     user = User.query.filter_by(tg_id=id).first()

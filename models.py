@@ -84,7 +84,10 @@ class User(db.Model):
     @staticmethod
     def get_full_name(user_id):
         user = User.query.filter_by(id=user_id).first()
-        return user.name[0] + '. ' + user.surname
+        if user:
+            return user.name[0] + '. ' + user.surname
+        else:
+            return 'Unknown'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
@@ -101,6 +104,7 @@ class User(db.Model):
     sex = db.Column(db.String(16))
     chat_id = db.Column(db.String(64))
     state = db.Column(db.Integer)
+    extra = db.Column(db.String(256))
     photo = db.Column(db.String(512))
     private_key = db.Column(db.String(256))
 
