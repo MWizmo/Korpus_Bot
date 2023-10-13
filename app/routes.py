@@ -757,7 +757,7 @@ def process_callback(callback):
         criterion_id = int(items[1])
         axis_id = int(items[3])
         markup = InlineKeyboardMarkup()
-        teams = Membership.query.filter_by(user_id=user_id).all()
+        teams = Membership.query.filter_by(user_id=get_id(user_id)).all()
         teams = [team.team_id for team in teams] + [0]
         votings = []
         for t in teams:
@@ -785,6 +785,7 @@ def process_callback(callback):
             criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                           6: 'Подтверждение средой',7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
             for admin in admins:
+                print(admin.chat_id)
                 bot.send_message(admin.chat_id, f'<b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(cur_user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>', parse_mode='HTML')
             user_chat_id = User.get(cur_user_id).chat_id
             user_markup = InlineKeyboardMarkup()
