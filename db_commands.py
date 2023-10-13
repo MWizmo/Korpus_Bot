@@ -32,7 +32,7 @@ def getAdmins():
             status = getStatus(user.tg_id)
             if 1 in status:
                 admins.append(user)
-        except ApiException as e:
+        except Exception as e:
             print(f"Exception for user with id {user.id}: {str(e)}")
     return admins
 

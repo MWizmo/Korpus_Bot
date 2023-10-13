@@ -361,7 +361,7 @@ def process_text(message):
             bot.send_message(admin.chat_id,
                              f'Ранее <b>{User.get_full_name(get_id(cadet_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>\n{User.get_full_name(get_id(user_id))} отправил комментарий',
                              parse_mode='HTML')
-        user_chat_id = User.get(cadet_id).chat_id
+        user_chat_id = User.query.get(cadet_id).chat_id
         user_markup = InlineKeyboardMarkup()
         user_markup.add(InlineKeyboardButton(text='Принято',
                                              callback_data=f'accept_comment_{criterion_id}_{voting_id}_{axis_id}_{user_id}_{mark}'))
@@ -779,7 +779,10 @@ def process_callback(callback):
         criterion_id = int(items[1])
         axis_id = int(items[3])
         cur_user_id = int(items[4])
-        mark = int(items[5])
+        try:
+            mark = int(items[5])
+        except:
+            mark = 0
         if cur_user_id > 0:
             admins = getAdmins()
             axises = {1: 'Отношений', 2:'Дела', '3': 'Власти'}
@@ -787,8 +790,8 @@ def process_callback(callback):
                           6: 'Подтверждение средой',7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
             for admin in admins:
                 print(admin.chat_id)
-                bot.send_message(admin.chat_id, f'<b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(cur_user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>', parse_mode='HTML')
-            user_chat_id = User.get(cur_user_id).chat_id
+                bot.send_message(admin.chat_id, f'<b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий у <b>{User.get_full_name(cur_user_id)}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>', parse_mode='HTML')
+            user_chat_id = User.query.get(cur_user_id).chat_id
             user_markup = InlineKeyboardMarkup()
             user_markup.add(InlineKeyboardButton(text='Дать комментарий',
                                                 callback_data=f'comment_{criterion_id}_{voting_id}_{axis_id}_{cur_user_id}_{mark}'))
