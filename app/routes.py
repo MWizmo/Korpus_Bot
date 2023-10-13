@@ -768,7 +768,7 @@ def process_callback(callback):
             mark = VotingInfo.query.filter(VotingInfo.criterion_id == criterion_id, VotingInfo.cadet_id == user_id,
                                            VotingInfo.voting_id == v.id).first()
             markup.add(InlineKeyboardButton(text=User.get_full_name(cur_user.id),
-                                            callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark}'))
+                                            callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark.mark}'))
         markup.add(InlineKeyboardButton(text='Завершить', callback_data=f'feedback3_0_0_0_0_0'))
         bot.send_message(chat_id, 'Выберите члена коллегии, чей комментарий вы хотите получить', parse_mode='HTML',
                          reply_markup=markup)
@@ -778,7 +778,11 @@ def process_callback(callback):
         criterion_id = int(items[1])
         axis_id = int(items[3])
         cur_user_id = int(items[4])
-        mark = int(items[5])
+        try:
+            mark = int(items[5])
+        except Exception as e:
+            print(e)
+            mark = 0
         if cur_user_id > 0:
             admins = getAdmins()
             axises = {1: 'Отношений', 2:'Дела', '3': 'Власти'}
@@ -805,7 +809,7 @@ def process_callback(callback):
                 mark = VotingInfo.query.filter(VotingInfo.criterion_id == criterion_id, VotingInfo.cadet_id == user_id,
                                                VotingInfo.voting_id == v.id).first()
                 markup.add(InlineKeyboardButton(text=User.get_full_name(cur_user.id),
-                                                callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark}'))
+                                                callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark.mark}'))
             markup.add(InlineKeyboardButton(text='Завершить', callback_data=f'feedback3_0_0_0_0_0'))
             bot.send_message(chat_id, f'{User.get_full_name(get_id(cur_user_id))} получил ваш запрос на комментарий к оценке. Выберите члена коллегии, чей ещё комментарий вы хотели бы получить, или нажмите “Завершить“', parse_mode='HTML',
                              reply_markup=markup)
