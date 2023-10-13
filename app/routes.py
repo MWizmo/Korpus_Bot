@@ -809,7 +809,7 @@ def process_callback(callback):
             bot.send_message(chat_id, f'{User.get_full_name(get_id(cur_user_id))} получил ваш запрос на комментарий к оценке. Выберите члена коллегии, чей ещё комментарий вы хотели бы получить, или нажмите “Завершить“', parse_mode='HTML',
                              reply_markup=markup)
         else:
-            bot.send_message('Главное меню', reply_markup=getKeyboard(user_id))
+            bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
 
     elif data.startswith('comment'):
         items = data.split('_')
