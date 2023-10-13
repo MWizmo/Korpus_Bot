@@ -314,6 +314,7 @@ def process_text(message):
             if voting_id is None:
                 bot.send_message(chat_id, 'В настоящее время нет активной оценки', reply_markup=getAdminKeyboard())
                 setState(user_id, 1)
+                return
             for user in users_summary:
                 try:
                     bot.send_message(user, 'Сегодня были сформированы предварительные результаты ежемесячной оценки')

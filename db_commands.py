@@ -195,7 +195,7 @@ def get_id(tg_id):
 
 
 def getUsersSummaryFromVoting():
-    cur_voting = VotingTable.query.filter_by(status='Active').first()
+    cur_voting = VotingTable.query.filter_by(status='Fixed').first()
     if cur_voting:
         voting_id = cur_voting.id
     else:
