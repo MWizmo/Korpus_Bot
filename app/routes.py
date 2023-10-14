@@ -4,6 +4,7 @@ from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
 #from eth_account import Account
+import traceback
 import requests
 from telebot.apihelper import ApiException
 
@@ -85,7 +86,7 @@ def answer_telegram():
         else:
             print(update)
     except Exception as e:
-        print(e)
+        print(traceback.format_exc())
     finally:
         return "Message Processed"
 
@@ -346,15 +347,15 @@ def process_text(message):
     elif state == 200:
         extra = getExtra(user_id)
         items = extra.split('_')
-        voting_id = int(items[2])
-        criterion_id = int(items[1])
-        axis_id = int(items[3])
-        cadet_id = int(items[4])
-        mark = int(items[5])
+        voting_id = int(items[1])
+        criterion_id = int(items[0])
+        axis_id = int(items[2])
+        cadet_id = int(items[3])
+        mark = int(items[4])
         setState(user_id, 1)
         bot.send_message(chat_id, 'Комментарий отправлен', reply_markup=getKeyboard(user_id))
         admins = getAdmins()
-        axises = {1: 'Отношений', 2: 'Дела', '3': 'Власти'}
+        axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                       6: 'Подтверждение средой', 7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
         for admin in admins:
@@ -364,12 +365,12 @@ def process_text(message):
         user_chat_id = User.query.get(cadet_id).chat_id
         user_markup = InlineKeyboardMarkup()
         user_markup.add(InlineKeyboardButton(text='Принято',
-                                             callback_data=f'accept_comment_{criterion_id}_{voting_id}_{axis_id}_{user_id}_{mark}'))
+                                             callback_data=f'acceptcomment_{criterion_id}_{voting_id}_{axis_id}_{user_id}_{mark}'))
         user_markup.add(InlineKeyboardButton(text='Не принято',
-                                             callback_data=f'deny_comment_{criterion_id}_{voting_id}_{axis_id}_{user_id}_{mark}'))
+                                             callback_data=f'denycomment_{criterion_id}_{voting_id}_{axis_id}_{user_id}_{mark}'))
         bot.send_message(user_chat_id,
-                         f'Вы запрашивали комментарий у  <b>{User.get_full_name(get_id(user_id))}</b> по поводу оценки по критерию “<b>{criterions[criterion_id]}</b>“ оси <b>{axises[axis_id]}</b>\nКомментарий: {text}',
-                         reply_markup=user_markup)
+                         f'Вы запрашивали комментарий у  <b>{User.get_full_name(get_id(user_id))}</b> по поводу оценки по критерию “<b>{criterions[criterion_id]}</b>“ оси <b>{axises[axis_id]}</b>\nКомментарий: <i>{text}</i>',
+                         reply_markup=user_markup, parse_mode='HTML')
 
 
 def process_image(message):
@@ -785,7 +786,7 @@ def process_callback(callback):
             mark = 0
         if cur_user_id > 0:
             admins = getAdmins()
-            axises = {1: 'Отношений', 2:'Дела', '3': 'Власти'}
+            axises = {1: 'Отношений', 2:'Дела', 3: 'Власти'}
             criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                           6: 'Подтверждение средой',7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
             for admin in admins:
@@ -795,7 +796,7 @@ def process_callback(callback):
             user_markup = InlineKeyboardMarkup()
             user_markup.add(InlineKeyboardButton(text='Дать комментарий',
                                                 callback_data=f'comment_{criterion_id}_{voting_id}_{axis_id}_{cur_user_id}_{mark}'))
-            bot.send_message(user_chat_id, f'Пользователь <b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий по выставленной вами оценке <b>{mark}</b> по критерию “<b>{criterions[criterion_id]}</b>“ оси <b>{axises[axis_id]}</b>\nПожалуйста, дайте максимально развернутый комментарий, нажав кнопку “Дать комментарий“.\nОзнакомиться с данными, на основании которых вы выставляли оценку, можно тут - http://lk.korpus.io/voting_summary?axis_id={axis_id}', reply_markup=user_markup)
+            bot.send_message(user_chat_id, f'Пользователь <b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий по выставленной вами оценке <b>{mark}</b> по критерию “<b>{criterions[criterion_id]}</b>“ оси <b>{axises[axis_id]}</b>\nПожалуйста, дайте максимально развернутый комментарий, нажав кнопку “Дать комментарий“.\nОзнакомиться с данными, на основании которых вы выставляли оценку, можно тут - http://lk.korpus.io/voting_summary?axis_id={axis_id}', reply_markup=user_markup, parse_mode='HTML')
 
             markup = InlineKeyboardMarkup()
             teams = Membership.query.filter_by(user_id=user_id).all()
@@ -812,7 +813,7 @@ def process_callback(callback):
                 markup.add(InlineKeyboardButton(text=User.get_full_name(cur_user.id),
                                                 callback_data=f'feedback3_{criterion_id}_{voting_id}_{axis_id}_{cur_user.id}_{mark}'))
             markup.add(InlineKeyboardButton(text='Завершить', callback_data=f'feedback3_0_0_0_0_0'))
-            bot.send_message(chat_id, f'{User.get_full_name(get_id(cur_user_id))} получил ваш запрос на комментарий к оценке. Выберите члена коллегии, чей ещё комментарий вы хотели бы получить, или нажмите “Завершить“', parse_mode='HTML',
+            bot.send_message(chat_id, f'<b>{User.get_full_name(cur_user_id)}</b> получил ваш запрос на комментарий к оценке. Выберите члена коллегии, чей ещё комментарий вы хотели бы получить, или нажмите “Завершить“', parse_mode='HTML',
                              reply_markup=markup)
         else:
             bot.send_message(chat_id, 'Главное меню', reply_markup=getKeyboard(user_id))
@@ -828,7 +829,7 @@ def process_callback(callback):
         setExtra(user_id, f'{criterion_id}_{voting_id}_{axis_id}_{cadet_id}_{mark}')
         bot.send_message(chat_id, 'Введите и отправьте сообщение с текстом комментария')
 
-    elif data.startswith('accept_comment'):
+    elif data.startswith('acceptcomment'):
         items = data.split('_')
         voting_id = int(items[2])
         criterion_id = int(items[1])
@@ -837,7 +838,7 @@ def process_callback(callback):
         mark = int(items[5])
         bot.send_message(chat_id, 'Отлично. Хорошо, что разобрались')
         admins = getAdmins()
-        axises = {1: 'Отношений', 2: 'Дела', '3': 'Власти'}
+        axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                       6: 'Подтверждение средой', 7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
         for admin in admins:
@@ -845,7 +846,7 @@ def process_callback(callback):
                              f'Ранее <b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(voter_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>\n{User.get_full_name(get_id(voter_id))} отправил комментарий\n{User.get_full_name(get_id(user_id))} принял комментарий',
                              parse_mode='HTML')
 
-    elif data.startswith('deny_comment'):
+    elif data.startswith('denycomment'):
         items = data.split('_')
         voting_id = int(items[2])
         criterion_id = int(items[1])
@@ -855,9 +856,9 @@ def process_callback(callback):
         voter = User.query.filter_by(tg_id=voter_id).first()
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton(text='Разобрались', callback_data=f'razobr_{criterion_id}_{voting_id}_{axis_id}_{voter_id}_{mark}'))
-        bot.send_message(chat_id, f'Для более детального разбора вашего случая, пожалуйста, свяжитесь с @{voter.tg_nickname}. После решения вашего вопроса, вернитесь к этому сообщению и нажмите кнопку “Разобрались“')
+        bot.send_message(chat_id, f'Для более детального разбора вашего случая, пожалуйста, свяжитесь с @{voter.tg_nickname}. После решения вашего вопроса, вернитесь к этому сообщению и нажмите кнопку “Разобрались“', reply_markup=markup)
         admins = getAdmins()
-        axises = {1: 'Отношений', 2: 'Дела', '3': 'Власти'}
+        axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                       6: 'Подтверждение средой', 7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
         for admin in admins:
@@ -877,7 +878,7 @@ def process_callback(callback):
         mark = int(items[5])
         bot.send_message(chat_id, 'Отлично! Благодарим за вовлечённость.')
         admins = getAdmins()
-        axises = {1: 'Отношений', 2: 'Дела', '3': 'Власти'}
+        axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
                       6: 'Подтверждение средой', 7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
         for admin in admins:

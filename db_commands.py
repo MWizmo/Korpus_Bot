@@ -30,7 +30,7 @@ def getAdmins():
     for user in users:
         try:
             status = getStatus(user.tg_id)
-            if 1 in status:
+            if 1 in status and user.tg_id and user.chat_id and len(str(user.chat_id)) > 3:
                 admins.append(user)
         except Exception as e:
             print(f"Exception for user with id {user.id}: {str(e)}")
