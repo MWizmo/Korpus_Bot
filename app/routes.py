@@ -1,11 +1,13 @@
-from app import bot, in_memory_storage
+from app import bot, in_memory_storage, jira_webhook_url, jira_api_url
 import bot_config
 from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
-#from eth_account import Account
+from eth_account import Account
+import jira_fields
 import traceback
 import requests
+from requests.auth import HTTPBasicAuth
 from telebot.apihelper import ApiException
 
 blueprint = blueprints.Blueprint('blueprint', __name__)
@@ -95,10 +97,11 @@ def process_text(message):
     text = message['text']
     chat_id = message['chat']['id']
     user_id = message['from']['id']
+    tg_user_info = in_memory_storage.hgetall(f"tg_user:{user_id}")
     if text == '/start':
-        start(message)
+        start(message, tg_user_info)
     elif getState(user_id) == -1:
-        start(message)
+        start(message, tg_user_info)
     state = getState(user_id)
     if state == 1:
         if text == admin_func_btn and isAdmin(user_id):
@@ -220,6 +223,13 @@ def process_text(message):
             bot.send_message(chat_id, 'Оповещения разосланы')
         elif text == ask_teams_crew_btn:
             pass
+        elif text == bug_report_btn:
+            in_memory_storage.hset(f"tg_user:{user_id}", mapping={'dialog_state': 'bug_report'})
+            bot.send_message(chat_id, 'Пожалуйста опишите с какой проблемой вы столкнулись и отправьте сообщение')
+        elif tg_user_info.get(b'dialog_state') == b'bug_report':
+            in_memory_storage.delete(f"tg_user:{message['from']['id']}")
+            requests.post(jira_webhook_url, json={'data': {'name': message['text'], 'chat_id': chat_id}})
+            bot.send_message(chat_id, 'На основе вашего сообщения была создана задача, она будет решена в ближайшее время. Благодарим за обратную связь!')
         else:
             bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
     elif state == 10:
@@ -440,6 +450,7 @@ def process_callback(callback):
     data = callback['data']
     user_id = callback['from']['id']
     user = User.query.filter_by(tg_id=user_id).first()
+    tg_user_info = in_memory_storage.hgetall(f"tg_user:{user_id}")
     message_id = callback['message']['message_id']
     chat_id = callback['message']['chat']['id']
     if data.startswith('alert_voting'):
@@ -925,11 +936,10 @@ def process_callback(callback):
         bot.send_message(chat_id, 'Добро пожаловать в сообщество Korpus. Пожалуйста, введите ваше Имя', reply_markup=markup)
     elif data == 'cancel_registration':
         in_memory_storage.delete(f"tg_user:{user_id}")
-        start(callback['message'])
+        start(callback['message'], tg_user_info)
 
 
-def start(message):
-    tg_user_info = in_memory_storage.hgetall(f"tg_user:{message['from']['id']}")
+def start(message, tg_user_info):
     if isUserInDb(message['from']['username']):
         if not (checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
             bot.send_message(message['chat']['id'],
@@ -987,3 +997,22 @@ def start(message):
         bot.send_message(message['chat']['id'],
                          """Кажется, ты еще не зарегистрирован в системе. Выбери удобный вариант регистрации""",
                          reply_markup=markup)
+
+
+@blueprint.route('/jira-bug-completed', methods=['POST'])
+def process_bug_completed():
+    notification = request.get_json()
+    if notification.get('issue') is None or notification['issue'].get('self') is None:
+        return "Wrong notification body", 400
+    try:
+        response = requests.get(
+            f"{jira_api_url}/issue/{notification['issue']['id']}",
+            params={'fields': f"summary,{jira_fields.bug_creator_chat_id}"},
+            auth=HTTPBasicAuth(bot_config.jira_username, bot_config.jira_token)
+        )
+        issue = response.json()
+        bot.send_message(issue['fields'][jira_fields.bug_creator_chat_id], f"Проблема «{issue['fields']['summary']}», о которой Вы заявили, была решена")
+    except:
+        return "Request to Jira failed", 500
+
+    return "ok"
