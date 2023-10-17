@@ -2,7 +2,6 @@ from models import *
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from buttons import *
 from sqlalchemy import func
-from telebot.apihelper import ApiException
 
 
 def isUserInDb(username):
@@ -64,6 +63,7 @@ def getKeyboard(id):
             markup.add(weekly_vote_members)
         if 2 in status or 4 in status or 5 in status:
             markup.add(voting_btn)
+        markup.add(bug_report_btn)
 
     return markup
 
@@ -75,6 +75,7 @@ def getAdminKeyboard():
     keyboard.add(weekly_vote_btn)
     if len(VotingTable.query.filter_by(status='Fixed').all()):
         keyboard.add(alert_results_btn)
+    keyboard.add(bug_report_btn)
     keyboard.add(back_btn)
     return keyboard
 

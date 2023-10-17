@@ -47,6 +47,6 @@ services:
 
 volumes:
   korpus-data:
-    external: true
+    name: korpus_data
   redis_data:
     name: korpus-bot-redis-data
