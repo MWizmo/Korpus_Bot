@@ -3,7 +3,7 @@ import bot_config
 from db_commands import *
 from sqlalchemy import func
 from flask import request, blueprints
-from eth_account import Account
+#from eth_account import Account
 import jira_fields
 import traceback
 import requests
@@ -370,7 +370,7 @@ def process_text(message):
                       6: 'Подтверждение средой', 7: 'Управляемость', 8: 'Самоуправление', 9: 'Стратегия'}
         for admin in admins:
             bot.send_message(admin.chat_id,
-                             f'Ранее <b>{User.get_full_name(get_id(cadet_id))}</b> запросил комментарий у <b>{User.get_full_name(get_id(user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>\n{User.get_full_name(get_id(user_id))} отправил комментарий',
+                             f'Ранее <b>{User.get_full_name(cadet_id)}</b> запросил комментарий у <b>{User.get_full_name(get_id(user_id))}</b> по оси <b>{axises[axis_id]}</b>, критерий <b>{criterions[criterion_id]}</b>, оценка <b>{mark}</b>\n{User.get_full_name(get_id(user_id))} отправил комментарий',
                              parse_mode='HTML')
         user_chat_id = User.query.get(cadet_id).chat_id
         user_markup = InlineKeyboardMarkup()
@@ -806,7 +806,7 @@ def process_callback(callback):
             user_chat_id = User.query.get(cur_user_id).chat_id
             user_markup = InlineKeyboardMarkup()
             user_markup.add(InlineKeyboardButton(text='Дать комментарий',
-                                                callback_data=f'comment_{criterion_id}_{voting_id}_{axis_id}_{cur_user_id}_{mark}'))
+                                                callback_data=f'comment_{criterion_id}_{voting_id}_{axis_id}_{get_id(user_id)}_{mark}'))
             bot.send_message(user_chat_id, f'Пользователь <b>{User.get_full_name(get_id(user_id))}</b> запросил комментарий по выставленной вами оценке <b>{mark}</b> по критерию “<b>{criterions[criterion_id]}</b>“ оси <b>{axises[axis_id]}</b>\nПожалуйста, дайте максимально развернутый комментарий, нажав кнопку “Дать комментарий“.\nОзнакомиться с данными, на основании которых вы выставляли оценку, можно тут - http://lk.korpus.io/voting_summary?axis_id={axis_id}', reply_markup=user_markup, parse_mode='HTML')
 
             markup = InlineKeyboardMarkup()
