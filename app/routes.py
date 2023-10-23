@@ -847,7 +847,7 @@ def process_callback(callback):
         axis_id = int(items[3])
         voter_id = int(items[4])
         mark = int(items[5])
-        bot.send_message(chat_id, 'Отлично. Хорошо, что разобрались')
+        bot.send_message(chat_id, 'Отлично. Вопрос закрыт')
         admins = getAdmins()
         axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
@@ -887,7 +887,7 @@ def process_callback(callback):
         axis_id = int(items[3])
         voter_id = int(items[4])
         mark = int(items[5])
-        bot.send_message(chat_id, 'Отлично! Благодарим за вовлечённость.')
+        bot.send_message(chat_id, 'Отлично! Вопрос закрыт.')
         admins = getAdmins()
         axises = {1: 'Отношений', 2: 'Дела', 3: 'Власти'}
         criterions = {1: 'Личностный рост', 2: 'Ясность позиции', 3: 'Энергия', 4: 'Движение', 5: 'Завершенность',
