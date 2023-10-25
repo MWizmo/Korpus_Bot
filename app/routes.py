@@ -742,11 +742,15 @@ def process_callback(callback):
             for t in teams:
                 votings += Voting.query.filter(Voting.voting_id == voting_id, Voting.axis_id == axis_id,
                                                Voting.team_id == t).all()
+            users = []
             for v in votings:
                 cur_user = User.query.get(v.user_id)
                 mark = VotingInfo.query.filter(VotingInfo.criterion_id == c_id, VotingInfo.cadet_id == user_id, VotingInfo.voting_id == v.id).first()
                 mark = mark.mark if mark else 0
-                text += f'<i>{User.get_full_name(cur_user.id)}</i> (@{cur_user.tg_nickname}): {mark}\n'
+                username = User.get_full_name(cur_user.id)
+                if username not in users:
+                    users.append(username)
+                    text += f'<i>{username}</i> (@{cur_user.tg_nickname}): {mark}\n'
         text += '\nНажмите <b>Обратная связь</b>, если хотите получить комментарий по выставленным оценкам.\nЕсли, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon.\nЕсли у вас нет вопросов по выставленным оценкам, просто проигнорируйте это сообщение.'
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton(text='Обратная связь', callback_data=f'feedback1_{axis_id}_{voting_id}'))
