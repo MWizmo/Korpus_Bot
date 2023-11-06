@@ -228,7 +228,7 @@ def process_text(message):
             bot.send_message(chat_id, 'Пожалуйста опишите с какой проблемой вы столкнулись и отправьте сообщение')
         elif tg_user_info.get(b'dialog_state') == b'bug_report':
             in_memory_storage.delete(f"tg_user:{message['from']['id']}")
-            requests.post(jira_webhook_url, json={'data': {'name': message['text'], 'chat_id': chat_id}})
+            requests.post(jira_webhook_url, json={'data': {'username': message['from']['first_name'], 'description': message['text'], 'chat_id': chat_id}})
             bot.send_message(chat_id, 'На основе вашего сообщения была создана задача, она будет решена в ближайшее время. Благодарим за обратную связь!')
         else:
             bot.send_message(chat_id, 'Неизвестная команда', reply_markup=getKeyboard(user_id))
@@ -1007,11 +1007,11 @@ def process_bug_completed():
     try:
         response = requests.get(
             f"{jira_api_url}/issue/{notification['issue']['id']}",
-            params={'fields': f"summary,{jira_fields.bug_creator_chat_id}"},
+            params={'fields': f"description,{jira_fields.bug_creator_chat_id}"},
             auth=HTTPBasicAuth(bot_config.jira_username, bot_config.jira_token)
         )
         issue = response.json()
-        bot.send_message(issue['fields'][jira_fields.bug_creator_chat_id], f"Проблема «{issue['fields']['summary']}», о которой Вы заявили, была решена")
+        bot.send_message(issue['fields'][jira_fields.bug_creator_chat_id], f"Проблема «{issue['fields']['description']}», о которой Вы заявили, была решена")
     except:
         return "Request to Jira failed", 500
 
