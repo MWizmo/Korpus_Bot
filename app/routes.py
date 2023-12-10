@@ -705,21 +705,28 @@ def process_callback(callback):
         text = 'Вот как вас оценили:\n<b>Движение</b>\n'
         marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
                                           WeeklyVoting.criterion_id == 4, WeeklyVoting.finished == 1).all()
+        users1, users2, users3 = [], [], []
         for mark in marks:
             user = User.query.get(mark.user_id)
-            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+            if user.id not in users1:
+                users1.append(user.id)
+                text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\n<b>Завершённость</b>\n'
         marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
                                           WeeklyVoting.criterion_id == 5, WeeklyVoting.finished == 1).all()
         for mark in marks:
             user = User.query.get(mark.user_id)
-            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+            if user.id not in users2:
+                users2.append(user.id)
+                text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\n<b>Подтверждение средой</b>\n'
         marks = WeeklyVoting.query.filter(WeeklyVoting.date == date, WeeklyVoting.team_id == team_id,
                                           WeeklyVoting.criterion_id == 6, WeeklyVoting.finished == 1).all()
         for mark in marks:
             user = User.query.get(mark.user_id)
-            text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
+            if user.id not in users3:
+                users3.append(user.id)
+                text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\nВы можете запросить комментарий у любого из оценивающих. Если, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon'
         bot.send_message(chat_id, text, parse_mode='HTML')
     elif data.startswith('votingdetails_'):
