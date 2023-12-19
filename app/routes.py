@@ -708,7 +708,7 @@ def process_callback(callback):
         users1, users2, users3 = [], [], []
         for mark in marks:
             user = User.query.get(mark.user_id)
-            if user.id not in users1:
+            if user.id not in users1 and user.id != user_id:
                 users1.append(user.id)
                 text += f'<i>{User.get_full_name(user.id)}</i> (@{user.tg_nickname}): {mark.mark}\n'
         text += '\n<b>Завершённость</b>\n'
@@ -755,7 +755,7 @@ def process_callback(callback):
                 mark = VotingInfo.query.filter(VotingInfo.criterion_id == c_id, VotingInfo.cadet_id == user_id, VotingInfo.voting_id == v.id).first()
                 mark = mark.mark if mark else 0
                 username = User.get_full_name(cur_user.id)
-                if username not in users:
+                if username not in users and cur_user.id != user_id:
                     users.append(username)
                     text += f'<i>{username}</i> (@{cur_user.tg_nickname}): {mark}\n'
         text += '\nНажмите <b>Обратная связь</b>, если хотите получить комментарий по выставленным оценкам.\nЕсли, на ваш взгляд, результаты искажены из-за технической ошибки, обратитесь к @robertlengdon.\nЕсли у вас нет вопросов по выставленным оценкам, просто проигнорируйте это сообщение.'
