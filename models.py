@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
+
+from sqlalchemy.orm import Mapped
+
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -18,6 +21,14 @@ class User(db.Model):
         statuses = UserStatuses.query.filter_by(user_id=current_user_id).all()
         for status in statuses:
             if status.status_id == 1:
+                return True
+        return False
+
+    @staticmethod
+    def check_community_manager(current_user_id):
+        statuses = UserStatuses.query.filter_by(user_id=current_user_id).all()
+        for status in statuses:
+            if status.status_id == 11:
                 return True
         return False
 
@@ -73,6 +84,22 @@ class User(db.Model):
                 return True
         return False
 
+    @property
+    def is_community_manager(self):
+        return User.check_community_manager(self.id)
+
+    @property
+    def is_waiting_registration(self):
+        return self.registration_state == 1
+
+    @property
+    def is_full_registered(self):
+        return self.registration_state == 2
+
+    @property
+    def is_registration_rejected(self):
+        return self.registration_state == 3
+
     @staticmethod
     def dict_of_responsibilities(current_user_id):
         return dict(admin=User.check_admin(current_user_id), cadet=User.check_cadet(current_user_id),
@@ -107,6 +134,8 @@ class User(db.Model):
     extra = db.Column(db.String(256))
     photo = db.Column(db.String(512))
     private_key = db.Column(db.String(256))
+    registration_state = db.Column(db.Integer)
+    registration_rejected_at = db.Column(db.DateTime)
 
     def __init__(self, email, login, tg_nickname,
                  courses, birthday, education, work_exp, sex, name, surname, private_key):
@@ -235,6 +264,11 @@ class UserStatuses(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
     status_id = db.Column(db.Integer)
+    user: Mapped["User"] = db.relationship(
+        backref="statuses",
+        primaryjoin='UserStatuses.user_id == User.id',
+        foreign_keys=user_id,
+    )
 
 
 class Axis(db.Model):
@@ -374,4 +408,11 @@ class ActivityField(db.Model):
 class UserActivityField(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     field_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+
+
+class UserRegistrationMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer)
+    message_id = db.Column(db.Integer)
     user_id = db.Column(db.Integer)

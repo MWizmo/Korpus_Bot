@@ -22,8 +22,6 @@ services:
       MYSQL_PASSWORD: 'korpus_password'
       MYSQL_USER: 'korpus_user'
       MYSQL_DATABASE: 'korpus_db'
-    ports:
-      - "3306:3306"
     volumes:
       - korpus-data:/var/lib/mysql
   redis:
@@ -47,6 +45,7 @@ services:
 
 volumes:
   korpus-data:
-    name: korpus_data
+    name: korpus-data
+    external: true
   redis_data:
     name: korpus-bot-redis-data
