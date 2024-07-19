@@ -94,7 +94,7 @@ class User(db.Model):
 
     @property
     def is_full_registered(self):
-        return self.registration_state == 2
+        return self.registration_state is None or self.registration_state == 2
 
     @property
     def is_registration_rejected(self):

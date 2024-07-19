@@ -103,6 +103,20 @@ def process_text(message):
         start(message)
     elif getState(user_id) == -1:
         start(message)
+    user = User.query.filter_by(tg_id=user_id).first()
+
+    if not user.is_full_registered:
+        if user.is_registration_rejected:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(text='Отправить повторно', callback_data='resend_registration_request'))
+            bot.send_message(
+                chat_id,
+                "Ваша прошлая заявка на регистрацию была отменена, отправить заявку повторно?",
+                reply_markup=markup,
+            )
+
+        return
+
     state = getState(user_id)
     if state == 1:
         if text == admin_func_btn and isAdmin(user_id):
@@ -941,7 +955,6 @@ def process_callback(callback):
             send_next_registration_request(user_id)
         setRegistrationState(user_id, 1)
         bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
-        setState(user_id, 1)
     elif data.startswith("accept-registration_"):
         if not user.is_community_manager:
             return
@@ -954,6 +967,7 @@ def process_callback(callback):
         if accepted_user.is_full_registered:
             return bot.send_message(user_id, "Пользователь уже одобрен")
         setRegistrationState(accepted_user_id, 2)
+        setState(user_id, 1)
         remove_registration_keyboards(accepted_user.id)
         managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 11)).all()
         for manager in managers:
@@ -986,6 +1000,18 @@ def process_callback(callback):
             rejected_user.chat_id,
             "К сожалению, ваша регистрация была отклонена. Для получения дополнительной информации, пожалуйста, свяжитесь с нашим коммьюнити менеджером."
         )
+    elif data == "resend_registration_request":
+        user = User.query.filter_by(tg_id=user_id).first()
+        if user is None or user.is_registration_rejected:
+            return
+        user.registration_state = 1
+        user.registration_rejected_at = None
+        db.session.commit()
+        waiting_users = User.query.filter_by(registration_state=1).count()
+        if waiting_users == 0:
+            send_next_registration_request(user_id)
+        bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
+
     elif data == 'cancel_registration':
         in_memory_storage.delete(f"tg_user:{user_id}")
         start(callback['message'])
