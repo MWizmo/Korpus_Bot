@@ -956,7 +956,7 @@ def process_callback(callback):
         setRegistrationState(accepted_user_id, 2)
         remove_registration_keyboards(accepted_user.id)
         managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 11)).all()
-        for manager in managers[:1]:
+        for manager in managers:
             bot.send_message(manager.chat_id, "Пользователь одобрен")
         send_next_registration_request(None)
         keyboard = InlineKeyboardMarkup()
@@ -979,7 +979,7 @@ def process_callback(callback):
         db.session.commit()
         remove_registration_keyboards(rejected_user.id)
         managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 11)).all()
-        for manager in managers[:1]:
+        for manager in managers:
             bot.send_message(manager.chat_id, "Пользователь отклонен")
         send_next_registration_request(None)
         bot.send_message(
@@ -996,7 +996,7 @@ def send_next_registration_request(user_id):
         User.query.filter_by(registration_state=1).order_by(User.registration_rejected_at.desc()).first()
     managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 11)).all()
     keyboard = getRegistrationControlKeyboard(user.tg_id)
-    for manager in managers[:1]:
+    for manager in managers:
         with open(r'/home/snapper/KorpusToken/app/static/user_photos/user' + str(user.id) + '.jpg', 'rb') as photo:
             res = bot.send_photo(
                 manager.chat_id,
