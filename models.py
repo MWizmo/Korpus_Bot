@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from sqlalchemy.orm import Mapped
-
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -264,7 +262,8 @@ class UserStatuses(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
     status_id = db.Column(db.Integer)
-    user: Mapped["User"] = db.relationship(
+    user = db.relationship(
+        "User",
         backref="statuses",
         primaryjoin='UserStatuses.user_id == User.id',
         foreign_keys=user_id,
