@@ -68,6 +68,14 @@ def getKeyboard(id):
     return markup
 
 
+def getRegistrationControlKeyboard(user_id):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(text='Одобрить', callback_data=f'accept-registration_{user_id}'))
+    keyboard.add(InlineKeyboardButton(text='Отклонить', callback_data=f'reject-registration_{user_id}'))
+
+    return keyboard
+
+
 def getAdminKeyboard():
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     keyboard.add(alert_form_btn)
@@ -98,6 +106,12 @@ def setState(id, state):
     user = User.query.filter_by(tg_id=id).first()
     if user:
         user.state = state
+        db.session.commit()
+
+def setRegistrationState(id, state):
+    user = User.query.filter_by(tg_id=id).first()
+    if user:
+        user.registration_state = state
         db.session.commit()
 
 def setExtra(id, extra):

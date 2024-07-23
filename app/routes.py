@@ -9,6 +9,7 @@ import traceback
 import requests
 from requests.auth import HTTPBasicAuth
 from telebot.apihelper import ApiException
+from datetime import datetime
 
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
@@ -99,9 +100,23 @@ def process_text(message):
     user_id = message['from']['id']
     tg_user_info = in_memory_storage.hgetall(f"tg_user:{user_id}")
     if text == '/start':
-        start(message, tg_user_info)
+        start(message)
     elif getState(user_id) == -1:
-        start(message, tg_user_info)
+        start(message)
+    user = User.query.filter_by(tg_id=user_id).first()
+
+    if not user.is_full_registered:
+        if user.is_registration_rejected:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(text='Отправить повторно', callback_data='resend_registration_request'))
+            bot.send_message(
+                chat_id,
+                "Ваша прошлая заявка на регистрацию была отменена, отправить заявку повторно?",
+                reply_markup=markup,
+            )
+
+        return
+
     state = getState(user_id)
     if state == 1:
         if text == admin_func_btn and isAdmin(user_id):
@@ -935,23 +950,104 @@ def process_callback(callback):
         user_fields_count = UserActivityField.query.filter_by(user_id=user.id).count()
         if user_fields_count == 0:
             return bot.send_message(chat_id, 'Пожалуйста, выберите сферы вашей деятельности.')
-        bot.send_message(chat_id, 'Добро пожаловать!', reply_markup=getKeyboard(user_id))
+        waiting_users = User.query.filter_by(registration_state=1).count()
+        if waiting_users == 0:
+            send_next_registration_request(user_id)
+        setRegistrationState(user_id, 1)
+        bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
+    elif data.startswith("accept-registration_"):
+        if not user.is_community_manager:
+            return
+        accepted_user_id = data.split("_")[1]
+        if not accepted_user_id:
+            return None
+        accepted_user = User.query.filter_by(tg_id=accepted_user_id).first()
+        if accepted_user is None:
+            return
+        if accepted_user.is_full_registered:
+            return bot.send_message(user_id, "Пользователь уже одобрен")
+        setRegistrationState(accepted_user_id, 2)
         setState(user_id, 1)
-    elif data == 'register_via_bot':
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
-        in_memory_storage.hset(f"tg_user:{user_id}", mapping={
-            'bot_registration_state': 'firstname_requested',
-            'firstname': '',
-            'lastname': '',
-            'login': ''})
-        bot.send_message(chat_id, 'Добро пожаловать в сообщество Korpus. Пожалуйста, введите ваше Имя', reply_markup=markup)
+        remove_registration_keyboards(accepted_user.id)
+        managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 12)).all()
+        for manager in managers:
+            bot.send_message(manager.chat_id, "Пользователь одобрен")
+        send_next_registration_request(None)
+        keyboard = InlineKeyboardMarkup()
+        keyboard.add(InlineKeyboardButton(text='В личный кабинет', url="https://lk.korpus.io"))
+        bot.send_message(accepted_user.chat_id, "Ваша регистрация была одобрена.", reply_markup=keyboard)
+        bot.send_message(accepted_user.chat_id, "Добро пожаловать!", reply_markup=getKeyboard(user_id))
+    elif data.startswith("reject-registration_"):
+        if not user.is_community_manager:
+            return
+        rejected_user_id = data.split("_")[1]
+        if not rejected_user_id:
+            return None
+        rejected_user = User.query.filter_by(tg_id=rejected_user_id).first()
+        if rejected_user is None:
+            return
+        if rejected_user.is_registration_rejected:
+            return bot.send_message(user_id, "Пользователь уже отклонен")
+        setRegistrationState(rejected_user_id, 3)
+        rejected_user.registration_rejected_at = datetime.now()
+        db.session.commit()
+        remove_registration_keyboards(rejected_user.id)
+        managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 12)).all()
+        for manager in managers:
+            bot.send_message(manager.chat_id, "Пользователь отклонен")
+        send_next_registration_request(None)
+        bot.send_message(
+            rejected_user.chat_id,
+            "К сожалению, ваша регистрация была отклонена. Для получения дополнительной информации, пожалуйста, свяжитесь с нашим коммьюнити менеджером."
+        )
+    elif data == "resend_registration_request":
+        user = User.query.filter_by(tg_id=user_id).first()
+        if user is None or user.is_registration_rejected:
+            return
+        user.registration_state = 1
+        user.registration_rejected_at = None
+        db.session.commit()
+        waiting_users = User.query.filter_by(registration_state=1).count()
+        if waiting_users == 0:
+            send_next_registration_request(user_id)
+        bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
+
     elif data == 'cancel_registration':
         in_memory_storage.delete(f"tg_user:{user_id}")
-        start(callback['message'], tg_user_info)
+        start(callback['message'])
 
 
-def start(message, tg_user_info):
+def send_next_registration_request(user_id):
+    user = User.query.filter_by(tg_id=user_id).first() if user_id is not None else \
+        User.query.filter_by(registration_state=1).order_by(User.registration_rejected_at.desc()).first()
+    managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 12)).all()
+    keyboard = getRegistrationControlKeyboard(user.tg_id)
+    for manager in managers:
+        with open(r'/home/snapper/KorpusToken/app/static/user_photos/user' + str(user.id) + '.jpg', 'rb') as photo:
+            res = bot.send_photo(
+                manager.chat_id,
+                photo,
+                caption=f"{user.name} {user.surname} оставил заявку на регистрацию.",
+                reply_markup=keyboard,
+            )
+            message_record = UserRegistrationMessage(
+                chat_id=manager.chat_id,
+                message_id=res.message_id,
+                user_id=user.id
+            )
+            db.session.add(message_record)
+        db.session.commit()
+
+
+def remove_registration_keyboards(user_id):
+    registration_messages = UserRegistrationMessage.query.filter_by(user_id=user_id).all()
+    for message in registration_messages:
+        bot.edit_message_reply_markup(message.chat_id, message.message_id, reply_markup=[])
+    UserRegistrationMessage.query.filter_by(user_id=user_id).delete()
+    db.session.commit()
+
+
+def start(message):
     if isUserInDb(message['from']['username']):
         if not (checkBotRegistration(message['from']['username'], message['from']['id'], message['chat']['id'])):
             bot.send_message(message['chat']['id'],
@@ -961,53 +1057,11 @@ def start(message, tg_user_info):
             setState(message['from']['id'], 1)
             bot.send_message(message['chat']['id'],
                              "С возвращением!", reply_markup=getKeyboard(message['from']['id']))
-    elif tg_user_info.get(b'bot_registration_state') == b'firstname_requested':
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
-        tg_user_info[b'bot_registration_state'] = 'lastname_requested'
-        tg_user_info[b'firstname'] = message['text']
-        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
-        bot.send_message(message['chat']['id'], 'Введите вашу Фамилию', reply_markup=markup)
-    elif tg_user_info.get(b'bot_registration_state') == b'lastname_requested':
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
-        tg_user_info[b'bot_registration_state'] = 'login_requested'
-        tg_user_info[b'lastname'] = message['text']
-        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
-        bot.send_message(message['chat']['id'], 'Для доступа к личному кабинету вам необходимо придумать Логин. Пожалуйста, введите логин', reply_markup=markup)
-    elif tg_user_info.get(b'bot_registration_state') == b'login_requested':
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(text='Отмена', callback_data='cancel_registration'))
-        tg_user_info[b'bot_registration_state'] = 'password_requested'
-        tg_user_info[b'login'] = message['text']
-        in_memory_storage.hset(f"tg_user:{message['from']['id']}", mapping=tg_user_info)
-        bot.send_message(message['chat']['id'], 'Придумайте пароль для доступа к личному кабинету', reply_markup=markup)
-    elif tg_user_info.get(b'bot_registration_state') == b'password_requested':
-        eth_account = Account.create()
-        user = User(
-            email='',
-            login=tg_user_info[b'login'],
-            tg_nickname=message['from']['username'],
-            courses='',
-            birthday='',
-            education='Unknown',
-            work_exp='',
-            sex='',
-            name=tg_user_info[b'firstname'],
-            surname=tg_user_info[b'lastname'],
-            private_key=eth_account.key.hex())
-        user.set_password(message['text'])
-        db.session.add(user)
-        db.session.commit()
-        setStatusByID(user.id, 3)
-        in_memory_storage.delete(f"tg_user:{message['from']['id']}")
-        start(message)
     else:
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(text='Регистрация через сайт', url='http://lk.korpus.io/'))
-        markup.add(InlineKeyboardButton(text='Регистрация через бота', callback_data='register_via_bot'))
+        markup.add(InlineKeyboardButton(text='Регистрация', url='http://lk.korpus.io/'))
         bot.send_message(message['chat']['id'],
-                         """Кажется, ты еще не зарегистрирован в системе. Выбери удобный вариант регистрации""",
+                         "Кажется, Вы ещё не зарегистрированы в системе.",
                          reply_markup=markup)
 
 
