@@ -134,6 +134,7 @@ class User(db.Model):
     private_key = db.Column(db.String(256))
     registration_state = db.Column(db.Integer)
     registration_rejected_at = db.Column(db.DateTime)
+    registration_requested_at = db.Column(db.DateTime)
 
     def __init__(self, email, login, tg_nickname,
                  courses, birthday, education, work_exp, sex, name, surname, private_key):

@@ -954,6 +954,9 @@ def process_callback(callback):
         if waiting_users == 0:
             send_next_registration_request(user_id)
         setRegistrationState(user_id, 1)
+        requested_user = User.query.filter_by(tg_id=user_id).first()
+        requested_user.registration_requested_at = datetime.now()
+        db.session.commit()
         bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
     elif data.startswith("accept-registration_"):
         if not user.is_community_manager:
