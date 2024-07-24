@@ -1022,7 +1022,7 @@ def process_callback(callback):
 
 def send_next_registration_request(user_id):
     user = User.query.filter_by(tg_id=user_id).first() if user_id is not None else \
-        User.query.filter_by(registration_state=1).order_by(User.registration_rejected_at.desc()).first()
+        User.query.filter_by(registration_state=1).order_by(User.registration_requested_at.desc()).first()
     print(user)
     print(user_id)
     if user is None:
