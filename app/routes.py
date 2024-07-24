@@ -950,7 +950,7 @@ def process_callback(callback):
         user_fields_count = UserActivityField.query.filter_by(user_id=user.id).count()
         if user_fields_count == 0:
             return bot.send_message(chat_id, 'Пожалуйста, выберите сферы вашей деятельности.')
-        waiting_users = User.query.filter_by(registration_state=1).count()
+        waiting_users = User.query.filter_by(registration_state=1).count() or 0
         if waiting_users == 0:
             send_next_registration_request(user_id)
         setRegistrationState(user_id, 1)
@@ -1007,7 +1007,7 @@ def process_callback(callback):
         user = User.query.filter_by(tg_id=user_id).first()
         if user is None or not user.is_registration_rejected:
             return
-        waiting_users = User.query.filter_by(registration_state=1).count()
+        waiting_users = User.query.filter_by(registration_state=1).count() or 0
         user.registration_state = 1
         user.registration_rejected_at = None
         db.session.commit()
