@@ -1005,7 +1005,7 @@ def process_callback(callback):
         )
     elif data == "resend_registration_request":
         user = User.query.filter_by(tg_id=user_id).first()
-        if user is None or user.is_registration_rejected:
+        if user is None or not user.is_registration_rejected:
             return
         user.registration_state = 1
         user.registration_rejected_at = None
