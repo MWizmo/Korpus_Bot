@@ -1007,10 +1007,10 @@ def process_callback(callback):
         user = User.query.filter_by(tg_id=user_id).first()
         if user is None or not user.is_registration_rejected:
             return
+        waiting_users = User.query.filter_by(registration_state=1).count()
         user.registration_state = 1
         user.registration_rejected_at = None
         db.session.commit()
-        waiting_users = User.query.filter_by(registration_state=1).count()
         if waiting_users == 0:
             send_next_registration_request(user_id)
         bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
@@ -1022,7 +1022,7 @@ def process_callback(callback):
 
 def send_next_registration_request(user_id):
     user = User.query.filter_by(tg_id=user_id).first() if user_id is not None else \
-        User.query.filter_by(registration_state=1).order_by(User.registration_rejected_at.desc()).first()
+        User.query.filter_by(registration_state=1).order_by(User.registration_requested_at.desc()).first()
     print(user)
     print(user_id)
     if user is None:
