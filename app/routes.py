@@ -9,7 +9,7 @@ import traceback
 import requests
 from requests.auth import HTTPBasicAuth
 from telebot.apihelper import ApiException
-from datetime import datetime
+import datetime
 
 blueprint = blueprints.Blueprint('blueprint', __name__)
 
@@ -955,7 +955,7 @@ def process_callback(callback):
             send_next_registration_request(user_id)
         setRegistrationState(user_id, 1)
         requested_user = User.query.filter_by(tg_id=user_id).first()
-        requested_user.registration_requested_at = datetime.now()
+        requested_user.registration_requested_at = datetime.datetime.now()
         db.session.commit()
         bot.send_message(chat_id, 'Спасибо за регистрацию! Вы в очереди на рассмотрение. Сообщим, как только обработаем вашу заявку.')
     elif data.startswith("accept-registration_"):
@@ -992,7 +992,7 @@ def process_callback(callback):
         if rejected_user.is_registration_rejected:
             return bot.send_message(user_id, "Пользователь уже отклонен")
         setRegistrationState(rejected_user_id, 3)
-        rejected_user.registration_rejected_at = datetime.now()
+        rejected_user.registration_rejected_at = datetime.datetime.now()
         db.session.commit()
         remove_registration_keyboards(rejected_user.id)
         managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 12)).all()
@@ -1023,6 +1023,10 @@ def process_callback(callback):
 def send_next_registration_request(user_id):
     user = User.query.filter_by(tg_id=user_id).first() if user_id is not None else \
         User.query.filter_by(registration_state=1).order_by(User.registration_rejected_at.desc()).first()
+    print(user)
+    print(user_id)
+    if user is None:
+        return
     managers = User.query.filter(User.statuses.any(UserStatuses.status_id == 12)).all()
     keyboard = getRegistrationControlKeyboard(user.tg_id)
     for manager in managers:
